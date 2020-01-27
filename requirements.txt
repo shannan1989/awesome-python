@@ -9,7 +9,7 @@ certifi==2019.11.28
 cffi==1.13.2
 chardet==3.0.4
 coala-utils==0.5.1
-conda==4.8.1
+conda==4.3.16
 conda-package-handling==1.6.0
 cryptography==2.8
 cssselect==1.1.0
