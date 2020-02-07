@@ -21,9 +21,9 @@ cur = con.cursor()
 
 sql = ('CREATE TABLE IF NOT EXISTS twitter_blog ('
        'user varchar(64) NOT NULL PRIMARY KEY,'
-       'name varchar(64) DEFAULT "",'
+       "name varchar(64) DEFAULT '',"
        'crawl_all integer DEFAULT 1,'
-       'update_time datetime DEFAULT NULL'
+       'update_time datetime DEFAULT "2000-01-01 00:00:00"'
        ')')
 cur.execute(sql)
 con.commit()
