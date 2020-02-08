@@ -34,11 +34,12 @@ if __name__ == '__main__':
 
         twitters = []
         cur.execute(
-            'SELECT user,crawl_all FROM twitter_blog ORDER BY update_time DESC')
+            'SELECT user,name,crawl_all FROM twitter_blog ORDER BY update_time DESC')
         for row in cur.fetchall():
             twitters.append({
                 'user': row[0],
-                'crawl_all': bool(row[1])
+                'name': row[1],
+                'crawl_all': bool(row[2])
             })
 
         pool = Pool(processes=5)

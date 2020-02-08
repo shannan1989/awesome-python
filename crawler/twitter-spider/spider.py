@@ -8,7 +8,7 @@ from urllib import parse
 
 import requests
 from twitter_scraper import get_tweets
-from twitterscraper.query import query_tweets_from_user
+from twitterscraper import query_tweets_from_user
 
 
 class TwitterSpider(object):
@@ -25,19 +25,23 @@ class TwitterSpider(object):
     def start(self):
         try:
             user = self.config['user']
-            name = user
-            list_of_tweets = query_tweets_from_user(user, limit=10)
-            for tweet in list_of_tweets:
-                if tweet.username == user:
-                    name = tweet.fullname
-                    break
+            name = self.config['name']
 
-            cursor = self.con.cursor()
-            cursor.execute(
-                'UPDATE twitter_blog SET name=? WHERE user=?', (name, user))
-            self.con.commit()
+            if name == '' or name == user:
+                name = user
 
-            for tweet in get_tweets(user, pages=500):
+                list_of_tweets = query_tweets_from_user(user, limit=10)
+                for tweet in list_of_tweets:
+                    if tweet.username == user:
+                        name = tweet.fullname
+                        break
+
+                cursor = self.con.cursor()
+                cursor.execute(
+                    'UPDATE twitter_blog SET name=? WHERE user=?', (name, user))
+                self.con.commit()
+
+            for tweet in get_tweets(user, pages=1000):
                 update_time = int(time.mktime(tweet['time'].timetuple()))  # 时戳
                 for photo in tweet['entries']['photos']:
                     self.save_item(photo, name, update_time)
