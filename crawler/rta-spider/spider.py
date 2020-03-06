@@ -78,14 +78,16 @@ class RtaSpider(object):
             if not os.path.exists(file_dir):
                 os.makedirs(file_dir)
 
-            if 'window.__INITIAL_STATE__ =' in html.xpath("//script")[2].text:
-                t = html.xpath("//script")[2].text
-            else:
-                t = html.xpath("//script")[1].text
-            t = t.replace('window.__INITIAL_STATE__ =', '')
-            t = t.replace('\n', '')
-            t = t.replace(' ', '')
-            t = t[:-1]
+            t = ''
+            for s in html.xpath("//script"):
+                if 'window.__INITIAL_STATE__ =' in s.text:
+                    a = s.text.split('window.__APOLLO_STATE__')
+                    t = a[0]
+                    t = t.replace('window.__INITIAL_STATE__ =', '')
+                    t = t.replace('\n', '')
+                    t = t.replace(' ', '')
+                    t = t[:-1]
+                    break
             info = json.loads(t)
 
             info.pop('error')
@@ -97,7 +99,6 @@ class RtaSpider(object):
             info.pop('itsUpAds')
             info.pop('location')
             info.pop('promotions')
-            info.pop('tags')
             info.pop('redirection')
             info.pop('modals')
             info.pop('models')
