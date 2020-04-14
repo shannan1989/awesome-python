@@ -4,8 +4,8 @@ import configparser
 import os
 import time
 
-import init
-import utils.runtime
+from shutils import runtime
+
 from spider import RtaSpider
 
 config = configparser.ConfigParser()
@@ -30,4 +30,4 @@ if __name__ == '__main__':
         "%Y-%m-%d %H:%M:%S", time.localtime(end + CrawlInterval))
     print('Spider will restart after %ss, at %s.' %
           (CrawlInterval, restart_time))
-    utils.runtime.restart(delay=CrawlInterval)
+    runtime.restart(delay=CrawlInterval)
