@@ -26,3 +26,7 @@ conda install pigar
 ```
 pigar --without-referenced-comments
 ```
+检查依赖库的最新版本
+```
+pigar -c ./requirements.txt
+```
