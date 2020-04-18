@@ -47,6 +47,7 @@ class TwitterSpider(object):
                     self.save_item(photo, name, update_time)
                 for video in tweet['entries']['videos']:
                     print('video', video)
+                    print('https://video.twimg.com/tweet_video/%s.mp4' % video['id'])
 
                 # 更新时间
                 new_time = datetime.datetime.fromtimestamp(
