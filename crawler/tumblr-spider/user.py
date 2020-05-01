@@ -1,15 +1,14 @@
 # coding=utf-8
 
-import configparser
-import os
 import sqlite3
 import sys
+
+from shutils.settings import Settings
 
 params = sys.argv
 params.pop(0)
 
-config = configparser.ConfigParser()
-config.read(os.path.abspath('./config.ini'))
+config = Settings.instance()
 
 database = config.get('settings', 'database')
 
