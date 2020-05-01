@@ -1,15 +1,13 @@
 # coding=utf-8
 
-import configparser
-import os
 import time
 
 from shutils import runtime
+from shutils.settings import Settings
 
 from spider import RtaSpider
 
-config = configparser.ConfigParser()
-config.read(os.path.abspath('./config.ini'))
+config = Settings.instance()
 
 SavePath = config.get('settings', 'save_path')
 StorePath = config.get('settings', 'store_path')
