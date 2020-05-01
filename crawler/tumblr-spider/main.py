@@ -1,17 +1,15 @@
 # coding=utf-8
 
-import configparser
-import os
 import sqlite3
 import time
 from multiprocessing import Pool
 
 from shutils import runtime
+from shutils.settings import Settings
 
 from spider import TumblrSpider
 
-config = configparser.ConfigParser()
-config.read(os.path.abspath('./config.ini'))
+config = Settings.instance()
 
 SavePath = config.get('settings', 'save_path')
 StorePath = config.get('settings', 'store_path')
