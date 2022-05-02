@@ -31,14 +31,13 @@ if __name__ == '__main__':
         cur = con.cursor()
 
         tumblrs = []
-        cur.execute(
-            'SELECT user,crawl_all,crawl_video,crawl_page_size FROM tumblr_blog ORDER BY update_time DESC')
+        cur.execute('SELECT user,crawl_all,crawl_video,crawl_days FROM tumblr_blog WHERE crawl_enable=1 ORDER BY update_time DESC')
         for row in cur.fetchall():
             tumblrs.append({
                 'user': row[0],
                 'crawl_all': bool(row[1]),
                 'crawl_video': bool(row[2]),
-                'crawl_page_size': int(row[3])
+                'crawl_days': int(row[3])
             })
 
         pool = Pool(processes=5)
