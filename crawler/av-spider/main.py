@@ -9,6 +9,9 @@ from spider import AvmooSpider
 
 config = Settings.instance()
 CrawlInterval = config.getint('settings', 'crawl_interval')
+BaseUrl = config.get('settings', 'base_url')
+HoundUrl = config.get('settings', 'hound_url')
+StartUrl = config.get('settings', 'start_url')
 
 if __name__ == '__main__':
     start_time = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -16,7 +19,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    AvmooSpider().start()
+    AvmooSpider(BaseUrl, HoundUrl, StartUrl).start()
 
     end = time.time()
 
