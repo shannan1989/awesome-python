@@ -85,6 +85,10 @@ class AvmooSpider(object):
             }
             self.hound(data)
 
+            if next == False:
+                time.sleep(1)
+                return
+
         movies = []
         items = html.xpath("//div[@class='item']//a[@class='movie-box']")
         for _item in items:
