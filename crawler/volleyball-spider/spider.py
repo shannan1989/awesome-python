@@ -92,7 +92,8 @@ class VolleyChinaSpider(VolleyballSpider):
                 news = []
                 time.sleep(1)
 
-        self.hound({'news': json.dumps(news)})
+        if len(news) > 0:
+            self.hound({'news': json.dumps(news)})
 
     def parse_item(self, url):
         r = requests.get(url, headers=self.getHeaders())
@@ -104,4 +105,82 @@ class VolleyChinaSpider(VolleyballSpider):
             comment.extract()
 
         content = soup.find("div", class_="detail-context").prettify()
+        return content
+
+
+class VolSportsSpider(VolleyballSpider):
+    def __init__(self):
+        self.url = "https://volsports.co/blog/category/news/"
+
+    def start(self):
+        self.parse_list(self.url)
+
+    def parse_list(self, url):
+        r = requests.get(url, headers=self.getHeaders())
+        print('%s %s' % (r.status_code, url))
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        news = []
+        for item in soup.select(".post"):
+            article = {
+                'source': 'volsports',
+                'title': '',
+                'author': '',
+                'desc': '',
+                'poster': '',
+                'content': '',
+                'publish_time': ''
+            }
+
+            title_ = item.select_one("div.info a.name")
+            article['url'] = title_.get('href')
+            article['title'] = title_.text.strip()
+
+            article['poster'] = item.select_one(
+                'div.img-wrap a img').get('src')
+
+            time_ = item.select_one('div.info div.wrap a:nth-child(1)')
+            article['publish_time'] = time_.text.strip()
+
+            author_ = item.select_one('div.info div.wrap a:nth-child(2)')
+            article['author'] = author_.text.strip()
+
+            article['content'] = self.parse_item(article['url'])
+
+            news.append(article)
+            if len(news) == 5:
+                self.hound({'news': json.dumps(news)})
+                news = []
+
+        if len(news) > 0:
+            self.hound({'news': json.dumps(news)})
+
+        # 下一页
+        current_page = soup.select_one('ul.pagination li.active a').text
+        if int(current_page) < 5:
+            next_page = soup.select_one(
+                'ul.pagination li:last-child a').get('href')
+            self.parse_list(next_page)
+
+    def parse_item(self, url):
+        r = requests.get(url, headers=self.getHeaders())
+        print('%s %s' % (r.status_code, url))
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        content_ = soup.find("div", class_="post-content")
+
+        for iframe in content_.find_all('iframe'):
+            iframe.extract()
+
+        # 删除每个h标签及其后面的内容
+        for h in content_.find_all(['h2', 'h3']):
+            if h.text != '延伸閱讀':
+                continue
+            for tag in h.find_next_siblings():
+                if tag.name == h.name:
+                    break
+                tag.extract()
+            h.extract()
+
+        content = content_.prettify()
         return content
