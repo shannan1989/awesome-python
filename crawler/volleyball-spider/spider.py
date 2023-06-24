@@ -174,7 +174,7 @@ class VolSportsSpider(VolleyballSpider):
 
         # 删除每个h标签及其后面的内容
         for h in content_.find_all(['h2', 'h3']):
-            if h.text != '延伸閱讀':
+            if h.text.find('延伸閱讀') == -1:
                 continue
             for tag in h.find_next_siblings():
                 if tag.name == h.name:
