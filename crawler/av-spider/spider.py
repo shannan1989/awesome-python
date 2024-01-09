@@ -1,11 +1,10 @@
 # coding=utf-8
 
-from itertools import count
 import json
-import time
-import requests
 import random
-
+import requests
+import time
+from itertools import count
 from lxml import etree
 from multiprocessing.dummy import Pool
 from urllib.parse import urlparse
@@ -25,14 +24,25 @@ class AvmooSpider(object):
         ]
 
     def getHeaders(self):
+        userAgents = [
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3.1 Safari/605.1.15',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36 Edge/18.17763'
+        ]
+        random.shuffle(userAgents)
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+            'User-Agent': userAgents[0]
         }
         return headers
 
     def hound(self, data):
-        r = requests.post(self.houndUrl, data, headers=self.getHeaders())
-        print(r.content)
+        try:
+            r = requests.post(self.houndUrl, data, headers=self.getHeaders())
+            print(r.content)
+        except Exception as e:
+            self.printException(e)
 
     def printException(self, e):
         print('Exception occurs at line %s' %
@@ -54,17 +64,29 @@ class AvmooSpider(object):
             url = self.host + '/cn/star/' + star['id']
             self.parseList(url, star['subscribe'] == 1)
 
-    def parseList(self, url, next):
-        pr = urlparse(url)
+    def request(self, url, tries=1):
+        if tries >= 10:
+            print(url, 'tries>=10')
+            return False
+        try:
+            r = requests.get(url, headers=self.getHeaders())
+            print('%s %s' % (r.status_code, url))
+            if r.status_code != 200:
+                time.sleep(5)
+                return self.request(url, tries + 1)
 
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
-        if r.status_code == 403:
+            return r
+        except Exception as e:
+            print(url, e)
             time.sleep(5)
-            self.parseList(url, next)
+            return self.request(url, tries + 1)
+
+    def parseList(self, url, next, tries=1):
+        r = self.request(url)
+        if r == False:
             return
-        if r.status_code != 200:
-            return
+
+        pr = urlparse(url)
 
         html = etree.HTML(r.content)
 
@@ -113,7 +135,7 @@ class AvmooSpider(object):
             pool.close()
             pool.join()
 
-        time.sleep(1)
+        time.sleep(2)
 
         if next == False:
             return
@@ -127,16 +149,10 @@ class AvmooSpider(object):
             print('next page')
             self.parseList(href, next)
 
-    def parseMovie(self, item):
+    def parseMovie(self, item, tries=1):
         url = item['url']
-        try:
-            r = requests.get(url, headers=self.getHeaders())
-        except Exception as e:
-            self.printException(e)
-            return
-
-        print('%s %s' % (r.status_code, url))
-        if r.status_code != 200:
+        r = self.request(url)
+        if r == False:
             return
 
         html = etree.HTML(r.content)
@@ -222,4 +238,5 @@ class AvmooSpider(object):
             'movies': json.dumps(movies)
         }
         self.hound(data)
+
         time.sleep(1)
