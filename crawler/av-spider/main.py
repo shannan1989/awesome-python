@@ -5,13 +5,14 @@ import time
 from shutils import runtime
 from shutils.settings import Settings
 
-from spider import AvmooSpider
+from spider import AvmooSpider, JavBusSpider
 
 config = Settings.instance()
 CrawlInterval = config.getint('settings', 'crawl_interval')
 BaseUrl = config.get('settings', 'base_url')
 HoundUrl = config.get('settings', 'hound_url')
 StartUrl = config.get('settings', 'start_url')
+JavBusUrl = config.get('settings', 'javbus_url')
 
 if __name__ == '__main__':
     start_time = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -19,6 +20,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
+    JavBusSpider(BaseUrl, HoundUrl, JavBusUrl).start()
     AvmooSpider(BaseUrl, HoundUrl, StartUrl).start()
 
     end = time.time()
