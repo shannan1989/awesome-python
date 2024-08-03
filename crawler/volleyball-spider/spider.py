@@ -136,8 +136,7 @@ class VolSportsSpider(VolleyballSpider):
             article['url'] = title_.get('href')
             article['title'] = title_.text.strip()
 
-            article['poster'] = item.select_one(
-                'div.img-wrap a img').get('src')
+            article['poster'] = item.select_one('div.img-wrap a img').get('src')
 
             time_ = item.select_one('div.info div.wrap a:nth-child(1)')
             article['publish_time'] = time_.text.strip()
@@ -157,10 +156,9 @@ class VolSportsSpider(VolleyballSpider):
 
         # 下一页
         current_page = soup.select_one('ul.pagination li.active a').text
-        if int(current_page) < 5:
-            next_page = soup.select_one(
-                'ul.pagination li:last-child a').get('href')
-            self.parse_list(next_page)
+        if int(current_page) < 2:
+            next_page = soup.select_one('ul.pagination li:last-child a')
+            self.parse_list(next_page.get('href'))
 
     def parse_item(self, url):
         r = requests.get(url, headers=self.getHeaders())
@@ -181,6 +179,83 @@ class VolSportsSpider(VolleyballSpider):
                     break
                 tag.extract()
             h.extract()
+
+        content = content_.prettify()
+        return content
+
+
+class SportsVSpider(VolleyballSpider):
+    def __init__(self):
+        self.url = "https://www.sportsv.net/volleyball"
+
+    def start(self):
+        self.parse_list(self.url)
+
+    def parse_list(self, url, current_page=1):
+        r = requests.get(url, headers=self.getHeaders())
+        print('%s %s' % (r.status_code, url))
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        news = []
+        for item in soup.select("div.item_lish div.item"):
+            article = {
+                'source': 'sportsv',
+                'title': '',
+                'author': '',
+                'desc': '',
+                'poster': '',
+                'content': '',
+                'publish_time': ''
+            }
+
+            title_ = item.select_one('h4 a')
+            article['title'] = title_.text
+            article['url'] = title_.get('href')
+            article['poster'] = item.select_one('a div img.cover').get('src')
+            article['author'] = item.select_one('a.author_name').text
+            article['desc'] = item.select_one('p').text
+            article['publish_time'] = item.select_one('div.date').text
+            article['content'] = self.parse_item(article['url'])
+
+            news.append(article)
+            time.sleep(1)
+            if len(news) == 1:
+                self.hound({'news': json.dumps(news)})
+                news = []
+
+        if len(news) > 0:
+            self.hound({'news': json.dumps(news)})
+
+        # 下一页
+        if current_page < 2:
+            next_page = current_page + 1
+            self.parse_list(self.url + '?page=' + str(next_page), next_page)
+
+        # current_page = soup.select_one('div.pagination ul li.active a')
+        # if int(current_page.text) < 5:
+        #     next_page = soup.select_one('div.pagination ul li:last-child a')
+        #     self.parse_list(next_page.get('href'))
+
+    def parse_item(self, url):
+        r = requests.get(url, headers=self.getHeaders())
+        print('%s %s' % (r.status_code, url))
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        content_ = soup.find("div", class_="article-content")
+
+        for iframe in content_.find_all(['iframe', 'script']):
+            iframe.extract()
+        for tag in content_.find_all('div', class_='adv-article-content'):
+            tag.extract()
+
+        for tag in content_.find_all('figure', class_="image"):
+            for tag2 in tag.find_all('figcaption'):
+                new_tag2 = soup.new_tag('span', **{'class': 'figcaption'})
+                new_tag2.contents = tag2.contents
+                tag2.replace_with(new_tag2)
+            new_tag = soup.new_tag('div', **{'class': 'figure'})
+            new_tag.contents = tag.contents
+            tag.replace_with(new_tag)
 
         content = content_.prettify()
         return content
