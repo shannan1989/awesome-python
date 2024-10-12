@@ -5,6 +5,7 @@ import time
 
 import requests
 from bs4 import BeautifulSoup, Comment
+from urllib.parse import urlparse
 
 
 class VolleyballSpider(metaclass=abc.ABCMeta):
@@ -33,11 +34,95 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
             'User-Agent': userAgents[0]
         }
         return headers
+    
+    def parseHref(self, href, url):
+        pr = urlparse(url)
+        if href.startswith("//"):
+            href = pr.scheme + ':' + href
+        elif href.startswith("/"):
+            href = pr.scheme + '://' + pr.netloc + href
+        return href
 
     def printException(self, e):
         print('Exception occurs at line %s' %
               (e.__traceback__.tb_lineno.__str__()))
         print(e)
+
+class VolleyballChinaSpider(VolleyballSpider):
+    def __init__(self):
+        super().__init__()
+        self.urls = [
+            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520096,520096,520097,520098,520099,534929,543412',
+            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520087,520087,520089,520090,520092,520095,520112,534930,536678,536706'
+        ]
+
+    def start(self):
+        for url in self.urls:
+            self.parse_list(url)
+    
+    def parse_list(self, url):
+        response = requests.get(url, headers=self.getHeaders())
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        news = []
+        for item in soup.find_all('li', class_='w-list-item'):
+            article = {
+                'source': 'volleyballchina',
+                'title': '',
+                'url': '',
+                'author': '中国排球协会',
+                'desc': '',
+                'poster': '',
+                'content': '',
+                'publish_time': '2024-10-01'
+            }
+
+            title_ = item.select_one('p.w-list-title')
+            if title_ is None:
+                continue
+            article['title'] = title_.text
+
+            link_ = item.select_one('a.w-list-link')
+            article['url'] = self.parseHref(link_.get('href'), url)
+
+            desc_ = item.select_one('p.w-list-info')
+            article['desc'] = desc_.get_text(strip=True)
+
+            poster_ = item.select_one('div.w-list-pic img')
+            if poster_ is not None:
+                article['poster'] = self.parseHref(poster_.get('src'), url)
+            
+            info = self.parse_item(article['url'])
+
+            article['content'] = info['content']
+            article['publish_time'] = info['publish_time']
+            
+            news.append(article)
+            if len(news) == 10:
+                self.hound({'news': json.dumps(news)})
+                news = []
+                time.sleep(1)
+        
+        if len(news) > 0:
+            self.hound({'news': json.dumps(news)})
+
+    def parse_item(self, url):
+        r = requests.get(url, headers=self.getHeaders())
+        print('%s %s' % (r.status_code, url))
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        # Remove all comments from the HTML string
+        for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
+            comment.extract()
+
+        content = ''
+        content_ = soup.find("div", class_="w-detailcontent")
+        if content_ is not None:
+            content = content_.prettify()
+
+        publish_time = '2024-10-01' # TODO
+
+        return { 'content': content, 'publish_time': publish_time}
 
 
 class VolleyChinaSpider(VolleyballSpider):
