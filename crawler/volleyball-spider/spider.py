@@ -7,6 +7,17 @@ import requests
 from bs4 import BeautifulSoup, Comment
 from urllib.parse import urlparse
 
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # 启用无头模式
+chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
+chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
+driver = webdriver.Chrome(options=chrome_options)
 
 class VolleyballSpider(metaclass=abc.ABCMeta):
     houndUrl = ''
@@ -107,20 +118,28 @@ class VolleyballChinaSpider(VolleyballSpider):
             self.hound({'news': json.dumps(news)})
 
     def parse_item(self, url):
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
-        soup = BeautifulSoup(r.content, "html.parser")
-
-        # Remove all comments from the HTML string
-        for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
-            comment.extract()
-
         content = ''
-        content_ = soup.find("div", class_="w-detailcontent")
-        if content_ is not None:
-            content = content_.prettify()
+        publish_time = ''
 
-        publish_time = '2024-10-01' # TODO
+        try:
+            driver.get(url)
+
+            # 等待某个元素加载完成
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
+
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+
+            # Remove all comments from the HTML string
+            for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
+                comment.extract()
+
+            content_ = soup.find("div", class_="w-detailcontent")
+            if content_ is not None:
+                content = content_.prettify()
+
+            publish_time = soup.find('span', class_="w-createtime-date").text + ' ' + soup.find('span', class_="w-createtime-time").text
+        except Exception as e:
+            self.printException(e)
 
         return { 'content': content, 'publish_time': publish_time}
 
@@ -342,5 +361,9 @@ class SportsVSpider(VolleyballSpider):
             new_tag.contents = tag.contents
             tag.replace_with(new_tag)
 
-        content = content_.prettify()
+        content = ''
+        try:
+            content = content_.prettify()
+        except Exception as e:
+            self.printException(e)
         return content
