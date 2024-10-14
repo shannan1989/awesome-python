@@ -273,6 +273,9 @@ class VolSportsSpider(VolleyballSpider):
 
         for iframe in content_.find_all('iframe'):
             iframe.extract()
+        
+        for blockquote in content_.find_all('blockquote', class_='instagram-media'):
+            blockquote.extract()
 
         # 删除每个h标签及其后面的内容
         for h in content_.find_all(['h2', 'h3']):
