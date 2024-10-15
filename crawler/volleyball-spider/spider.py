@@ -63,8 +63,8 @@ class VolleyballChinaSpider(VolleyballSpider):
     def __init__(self):
         super().__init__()
         self.urls = [
-            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520096,520096,520097,520098,520099,534929,543412',
-            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520087,520087,520089,520090,520092,520095,520112,534930,536678,536706'
+            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520096,520097,520098,520099,534929,543412',
+            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520087,520089,520090,520092,520095,520112,534930,536678,536706'
         ]
 
     def start(self):
@@ -112,7 +112,8 @@ class VolleyballChinaSpider(VolleyballSpider):
             if len(news) == 10:
                 self.hound({'news': json.dumps(news)})
                 news = []
-                time.sleep(1)
+     
+            time.sleep(1)
         
         if len(news) > 0:
             self.hound({'news': json.dumps(news)})
@@ -127,6 +128,7 @@ class VolleyballChinaSpider(VolleyballSpider):
             # 等待某个元素加载完成
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
 
+            print(url)
             soup = BeautifulSoup(driver.page_source, "html.parser")
 
             # Remove all comments from the HTML string
