@@ -63,8 +63,8 @@ class VolleyballChinaSpider(VolleyballSpider):
     def __init__(self):
         super().__init__()
         self.urls = [
-            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520096,520097,520098,520099,534929,543412',
-            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520087,520089,520090,520092,520095,520112,534930,536678,536706'
+            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520097,520098',
+            'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520089,520090,520092,520095,534930,536678,536706'
         ]
 
     def start(self):
