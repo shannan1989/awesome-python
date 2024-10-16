@@ -4,7 +4,7 @@ import time
 
 from shutils import runtime
 from shutils.settings import Settings
-from spider import VolleyballSpider, VolleyballChinaSpider, VolSportsSpider, SportsVSpider
+from spider import VolleyballSpider, VolleyballChinaSpider, VolSportsSpider, SportsVSpider, SportsSinaSpider
 
 config = Settings.instance()
 CrawlInterval = config.getint('settings', 'crawl_interval')
@@ -17,6 +17,7 @@ if __name__ == '__main__':
     start = time.time()
 
     VolleyballSpider.houndUrl = HoundUrl
+    SportsSinaSpider().start()
     VolleyballChinaSpider().start()
     SportsVSpider().start()
     VolSportsSpider().start()

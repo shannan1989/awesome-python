@@ -59,6 +59,86 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
               (e.__traceback__.tb_lineno.__str__()))
         print(e)
 
+class SportsSinaSpider(VolleyballSpider):
+    def __init__(self):
+        super().__init__()
+        self.url = 'https://sports.sina.com.cn/others/volley.shtml'
+
+    def start(self):
+        self.parse_list(self.url)
+    
+    def parse_list(self, url):
+        response = requests.get(url, headers=self.getHeaders())
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        uls = soup.find_all('ul', class_='list2')
+
+        news = []
+        for item in uls[1].find_all('li'):
+            article = {
+                'source': 'sports.sina',
+                'title': '',
+                'url': '',
+                'author': '新浪体育',
+                'desc': '',
+                'poster': '',
+                'content': '',
+                'publish_time': ''
+            }
+
+            title_ = item.select_one('a')
+            if title_ is None:
+                continue
+            article['url'] = title_.get('href')
+            article['title'] = title_.text
+            
+            info = self.parse_item(article['url'])
+
+            article['content'] = info['content']
+            article['publish_time'] = info['publish_time']
+            article['poster'] = info['poster']
+
+            news.append(article)
+            if len(news) == 10:
+                self.hound({'news': json.dumps(news)})
+                news = []
+
+            time.sleep(1)
+
+        if len(news) > 0:
+            self.hound({'news': json.dumps(news)})
+
+    def parse_item(self, url):
+        content = ''
+        publish_time = ''
+        poster = ''
+
+        r = requests.get(url, headers=self.getHeaders())
+        print('%s %s' % (r.status_code, url))
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        # Remove all comments from the HTML string
+        for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
+            comment.extract()
+        
+        for iframe in soup.find_all('div', class_='show_statement'):
+            iframe.extract()
+        for iframe in soup.find_all('div', id='left_hzh_ad'):
+            iframe.extract()
+
+        content_ = soup.find("div", class_="article")
+        content = content_.prettify()
+
+        imgs = content_.find_all('img')
+        if len(imgs) > 0:
+            poster = self.parseHref(imgs[0].get('src'), url)
+
+        publish_time = soup.find('span', class_='date').text
+        publish_time = publish_time.replace('年', '-').replace('月', '-').replace('日', '')
+
+        return { 'content': content, 'publish_time': publish_time, 'poster': poster }
+
+
 class VolleyballChinaSpider(VolleyballSpider):
     def __init__(self):
         super().__init__()
@@ -85,7 +165,7 @@ class VolleyballChinaSpider(VolleyballSpider):
                 'desc': '',
                 'poster': '',
                 'content': '',
-                'publish_time': '2024-10-01'
+                'publish_time': ''
             }
 
             title_ = item.select_one('p.w-list-title')
@@ -143,7 +223,7 @@ class VolleyballChinaSpider(VolleyballSpider):
         except Exception as e:
             self.printException(e)
 
-        return { 'content': content, 'publish_time': publish_time}
+        return { 'content': content, 'publish_time': publish_time }
 
 
 class VolleyChinaSpider(VolleyballSpider):
