@@ -13,11 +13,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # 启用无头模式
-chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
-chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
-driver = webdriver.Chrome(options=chrome_options)
 
 class VolleyballSpider(metaclass=abc.ABCMeta):
     houndUrl = ''
@@ -147,6 +142,15 @@ class VolleyballChinaSpider(VolleyballSpider):
             'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520089,520090,520092,520095,534930,536678,536706'
         ]
 
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # 启用无头模式
+        chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
+        chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
+        self.driver = webdriver.Chrome(options=chrome_options)
+
+    def __del__(self):
+        self.driver.close()
+
     def start(self):
         for url in self.urls:
             self.parse_list(url)
@@ -203,13 +207,13 @@ class VolleyballChinaSpider(VolleyballSpider):
         publish_time = ''
 
         try:
-            driver.get(url)
+            self.driver.get(url)
 
             # 等待某个元素加载完成
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
 
             print(url)
-            soup = BeautifulSoup(driver.page_source, "html.parser")
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
 
             # Remove all comments from the HTML string
             for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
