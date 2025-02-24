@@ -2,9 +2,10 @@ import abc
 import json
 import random
 import time
-
 import requests
+
 from bs4 import BeautifulSoup, Comment
+from datetime import datetime
 from urllib.parse import urlparse
 
 from selenium import webdriver
@@ -487,3 +488,101 @@ class SportsVSpider(VolleyballSpider):
         except Exception as e:
             self.printException(e)
         return content
+
+
+class FIVBSpider(VolleyballSpider):
+    def __init__(self):
+        super().__init__()
+        self.url = 'https://www.fivb.com/category/volley/'
+
+    def start(self):
+        self.parse_list(self.url)
+
+    def parse_list(self, url):
+        r = self.request(url)
+        if r == False :
+            return
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        items = soup.find_all('article', class_='mod-article-item')
+
+        news = []
+        for item in items:
+            article = {
+                'source': 'fivb',
+                'title': '',
+                'url': '',
+                'author': '国际排联',
+                'desc': '',
+                'poster': '',
+                'content': '',
+                'publish_time': ''
+            }
+
+            article['url'] = item.select_one('a').get('href')
+
+            info = self.parse_item(article['url'])
+
+            article['title'] = info['title']
+            article['desc'] = info['desc']
+            article['content'] = info['content']
+            article['publish_time'] = info['publish_time']
+            article['poster'] = info['poster']
+
+            news.append(article)
+            if len(news) == 10:
+                self.hound({'news': json.dumps(news)})
+                news = []
+
+            time.sleep(1)
+
+        if len(news) > 0:
+            self.hound({'news': json.dumps(news)})
+
+    def parse_item(self, url):
+        r = self.request(url)
+        if r == False :
+            return
+
+        title = ''
+        desc = ''
+        content = ''
+        publish_time = ''
+        poster = ''
+
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        # Remove all comments from the HTML string
+        for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
+            comment.extract()
+
+        main = soup.find('div', class_='single-new')
+
+        title_ = main.find('div', class_='title-wrapper')
+
+        title = title_.select_one('h1').text.strip()
+        desc = title_.select_one('h2').text.strip()
+
+        meta = main.find('div', class_='meta position-relative')
+
+        cover = meta.select_one('img', class_='cover')
+        poster = self.parseHref(cover.get('src'), url)
+
+        publish_time_ = meta.find('div', class_='date').text.strip()
+
+        publish_time = datetime.strptime(publish_time_, "%b %d, %Y").strftime("%Y-%m-%d")
+
+        content_ = main.find('article', class_='post').find('div', class_='container').find('div', class_='row')
+
+        for blockquote in content_.find_all('blockquote', class_='instagram-media'):
+            blockquote.extract()
+        
+        for div in content_.find_all('div', class_='spacer-3'):
+            div.extract()
+
+        for iframe in content_.find_all(['iframe', 'script']):
+            iframe.extract()
+
+        content = content_.prettify().replace('\n', '')
+
+        return { 'title': title, 'desc': desc, 'content': content, 'publish_time': publish_time, 'poster': poster }
