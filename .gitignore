@@ -105,3 +105,6 @@ venv.bak/
 
 # 项目配置文件
 config.ini
+
+# VSCode配置文件
+.vscode/
