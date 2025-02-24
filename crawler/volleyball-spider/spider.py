@@ -54,6 +54,24 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
               (e.__traceback__.tb_lineno.__str__()))
         print(e)
 
+    def request(self, url, tries=1):
+        if tries >= 5:
+            print(url, 'tries>=5')
+            return False
+        try:
+            r = requests.get(url, headers=self.getHeaders())
+            print('%s %s' % (r.status_code, url))
+            if r.status_code != 200:
+                time.sleep(5)
+                return self.request(url, tries + 1)
+
+            return r
+        except Exception as e:
+            print(url, e)
+            time.sleep(5)
+            return self.request(url, tries + 1)
+
+
 class SportsSinaSpider(VolleyballSpider):
     def __init__(self):
         super().__init__()
@@ -63,8 +81,10 @@ class SportsSinaSpider(VolleyballSpider):
         self.parse_list(self.url)
     
     def parse_list(self, url):
-        response = requests.get(url, headers=self.getHeaders())
-        soup = BeautifulSoup(response.content, "html.parser")
+        r = self.request(url)
+        if r == False:
+            return
+        soup = BeautifulSoup(r.content, "html.parser")
 
         uls = soup.find_all('ul', class_='list2')
 
@@ -104,12 +124,14 @@ class SportsSinaSpider(VolleyballSpider):
             self.hound({'news': json.dumps(news)})
 
     def parse_item(self, url):
+        r = self.request(url)
+        if r == False:
+            return
+        
         content = ''
         publish_time = ''
         poster = ''
 
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
         soup = BeautifulSoup(r.content, "html.parser")
 
         # Remove all comments from the HTML string
@@ -156,8 +178,10 @@ class VolleyballChinaSpider(VolleyballSpider):
             self.parse_list(url)
     
     def parse_list(self, url):
-        response = requests.get(url, headers=self.getHeaders())
-        soup = BeautifulSoup(response.content, "html.parser")
+        r = self.request(url)
+        if r == False:
+            return
+        soup = BeautifulSoup(r.content, "html.parser")
 
         news = []
         for item in soup.find_all('li', class_='w-list-item'):
@@ -238,8 +262,10 @@ class VolleyChinaSpider(VolleyballSpider):
         self.parse_list(self.url)
 
     def parse_list(self, url):
-        response = requests.get(url, headers=self.getHeaders())
-        soup = BeautifulSoup(response.content, "html.parser")
+        r = self.request(url)
+        if r == False:
+            return
+        soup = BeautifulSoup(r.content, "html.parser")
 
         news = []
         for item in soup.find_all('li', class_='new-detail'):
@@ -286,8 +312,9 @@ class VolleyChinaSpider(VolleyballSpider):
             self.hound({'news': json.dumps(news)})
 
     def parse_item(self, url):
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
+        r = self.request(url)
+        if r == False:
+            return
         soup = BeautifulSoup(r.content, "html.parser")
 
         # Remove all comments from the HTML string
@@ -306,8 +333,9 @@ class VolSportsSpider(VolleyballSpider):
         self.parse_list(self.url)
 
     def parse_list(self, url):
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
+        r = self.request(url)
+        if r == False:
+            return
         soup = BeautifulSoup(r.text, "html.parser")
 
         news = []
@@ -351,8 +379,9 @@ class VolSportsSpider(VolleyballSpider):
             self.parse_list(next_page.get('href'))
 
     def parse_item(self, url):
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
+        r = self.request(url)
+        if r == False:
+            return
         soup = BeautifulSoup(r.content, "html.parser")
 
         content_ = soup.find("div", class_="post-content")
@@ -385,8 +414,9 @@ class SportsVSpider(VolleyballSpider):
         self.parse_list(self.url)
 
     def parse_list(self, url, current_page=1):
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
+        r = self.request(url)
+        if r == False:
+            return
         soup = BeautifulSoup(r.text, "html.parser")
 
         news = []
@@ -401,7 +431,7 @@ class SportsVSpider(VolleyballSpider):
                 'publish_time': ''
             }
 
-            title_ = item.select_one('h4 a')
+            title_ = item.select_one('h3 a')
             article['title'] = title_.text
             article['url'] = title_.get('href')
             article['poster'] = item.select_one('a div img.cover').get('src')
@@ -430,8 +460,9 @@ class SportsVSpider(VolleyballSpider):
         #     self.parse_list(next_page.get('href'))
 
     def parse_item(self, url):
-        r = requests.get(url, headers=self.getHeaders())
-        print('%s %s' % (r.status_code, url))
+        r = self.request(url)
+        if r == False:
+            return
         soup = BeautifulSoup(r.content, "html.parser")
 
         content_ = soup.find("div", class_="article-content")
