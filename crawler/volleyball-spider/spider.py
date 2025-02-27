@@ -476,10 +476,12 @@ class SportsVSpider(VolleyballSpider):
         for tag in content_.find_all('figure', class_="image"):
             for tag2 in tag.find_all('figcaption'):
                 new_tag2 = soup.new_tag('span', **{'class': 'figcaption'})
-                new_tag2.contents = tag2.contents
+                for child in tag2.contents:
+                    new_tag2.append(child)
                 tag2.replace_with(new_tag2)
             new_tag = soup.new_tag('div', **{'class': 'figure'})
-            new_tag.contents = tag.contents
+            for child in tag.contents:
+                new_tag.append(child)
             tag.replace_with(new_tag)
 
         content = ''
@@ -569,7 +571,6 @@ class FIVBSpider(VolleyballSpider):
         poster = self.parseHref(cover.get('src'), url)
 
         publish_time_ = meta.find('div', class_='date').text.strip()
-
         publish_time = datetime.strptime(publish_time_, "%b %d, %Y").strftime("%Y-%m-%d")
 
         content_ = main.find('article', class_='post').find('div', class_='container').find('div', class_='row')
@@ -582,6 +583,17 @@ class FIVBSpider(VolleyballSpider):
 
         for iframe in content_.find_all(['iframe', 'script']):
             iframe.extract()
+
+        for figure in content_.find_all('figure'):
+            for figcaption in figure.find_all('figcaption'):
+                span = soup.new_tag('span', **{'class': 'figcaption'})
+                for child in figcaption.contents:
+                    span.append(child)
+                figcaption.replace_with(span)
+            div = soup.new_tag('div', **{'class': 'figure'})
+            for child in figure.contents:
+                div.append(child)
+            figure.replace_with(div)
 
         content = content_.prettify().replace('\n', '')
 
