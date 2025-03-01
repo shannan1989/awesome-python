@@ -1,12 +1,7 @@
 bs4 == 0.0.2
-fake-useragent == 1.5.1
+fake-useragent == 2.0.3
 id-validator == 1.0.20
-lxml == 5.3.0
-matplotlib == 3.5.3
-numpy == 1.22.3
-pandas == 2.0.3
+lxml == 5.3.1
 requests == 2.32.3
-selenium == 4.25.0
+selenium == 4.29.0
 shutils == 0.1.0
-twitter-scraper == 0.4.4
-twitterscraper == 1.6.1
