@@ -17,11 +17,11 @@ if __name__ == '__main__':
     start = time.time()
 
     VolleyballSpider.houndUrl = HoundUrl
-    SportsSinaSpider().start()
     VolleyballChinaSpider().start()
     SportsVSpider().start()
     VolSportsSpider().start()
     FIVBSpider().start()
+    SportsSinaSpider().start()
 
     end = time.time()
 
