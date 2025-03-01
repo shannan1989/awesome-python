@@ -16,11 +16,15 @@ pip freeze > requirements.txt
 - 它无法判断版本差异及循环依赖等情况
 - …………
 
+## 如何安装全部依赖库
+```
+pip install -r requirements.txt
+```
 
-## pigar
+## 使用pigar
 安装
 ```
-conda install pigar
+pip install pigar
 ```
 使用
 ```
@@ -28,5 +32,5 @@ pigar --without-referenced-comments
 ```
 检查依赖库的最新版本
 ```
-pigar -c ./requirements.txt
+pigar check
 ```
