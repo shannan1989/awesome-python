@@ -14,6 +14,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 
+def remove_tags(soup, tags):
+    for tag in soup.find_all(tags):
+        tag.extract()
+    return soup
+
+def remove_attrs(soup, attrs):
+    attrs_set = set(attrs)
+    for tag in soup.find_all(True):
+        for attr in list(tag.attrs.keys()):
+            if attr in attrs_set:
+                del tag[attr]
+    return soup
+
 
 class VolleyballSpider(metaclass=abc.ABCMeta):
     houndUrl = ''
@@ -134,15 +147,16 @@ class SportsSinaSpider(VolleyballSpider):
         poster = ''
 
         soup = BeautifulSoup(r.content, "html.parser")
+        soup = remove_attrs(soup, ['data-sudaclick', 'data-link'])
 
         # Remove all comments from the HTML string
         for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
             comment.extract()
         
-        for iframe in soup.find_all('div', class_='show_statement'):
-            iframe.extract()
-        for iframe in soup.find_all('div', id='left_hzh_ad'):
-            iframe.extract()
+        for tag in soup.find_all('div', class_='show_statement'):
+            tag.extract()
+        for tag in soup.find_all('div', id='left_hzh_ad'):
+            tag.extract()
 
         content_ = soup.find("div", class_="article")
         content = content_.prettify()
@@ -239,6 +253,7 @@ class VolleyballChinaSpider(VolleyballSpider):
 
             print(url)
             soup = BeautifulSoup(self.driver.page_source, "html.parser")
+            soup = remove_attrs(soup, ['id', 'longdesc', 'data-link', 'data-original', 'data-user-action', 'data-user-action-time'])
 
             # Remove all comments from the HTML string
             for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
@@ -384,11 +399,10 @@ class VolSportsSpider(VolleyballSpider):
         if r == False:
             return
         soup = BeautifulSoup(r.content, "html.parser")
+        soup = remove_tags(soup, ['iframe', 'script'])
+        soup = remove_attrs(soup, ['id', 'srcset'])
 
         content_ = soup.find("div", class_="post-content")
-
-        for iframe in content_.find_all('iframe'):
-            iframe.extract()
         
         for blockquote in content_.find_all('blockquote', class_='instagram-media'):
             blockquote.extract()
@@ -465,11 +479,11 @@ class SportsVSpider(VolleyballSpider):
         if r == False:
             return
         soup = BeautifulSoup(r.content, "html.parser")
+        soup = remove_tags(soup, ['iframe', 'script'])
+        soup = remove_attrs(soup, ['id', 'srcset', 'data-bucket-id', 'data-height', 'data-width'])
 
         content_ = soup.find("div", class_="article-content")
 
-        for iframe in content_.find_all(['iframe', 'script']):
-            iframe.extract()
         for tag in content_.find_all('div', class_='adv-article-content'):
             tag.extract()
 
@@ -553,6 +567,8 @@ class FIVBSpider(VolleyballSpider):
         poster = ''
 
         soup = BeautifulSoup(r.content, "html.parser")
+        soup = remove_tags(soup, ['iframe', 'script'])
+        soup = remove_attrs(soup, ['srcset'])
 
         # Remove all comments from the HTML string
         for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
@@ -580,9 +596,6 @@ class FIVBSpider(VolleyballSpider):
         
         for div in content_.find_all('div', class_='spacer-3'):
             div.extract()
-
-        for iframe in content_.find_all(['iframe', 'script']):
-            iframe.extract()
 
         for figure in content_.find_all('figure'):
             for figcaption in figure.find_all('figcaption'):
