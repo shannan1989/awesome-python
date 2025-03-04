@@ -49,9 +49,8 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36 Edge/18.17763'
         ]
-        random.shuffle(userAgents)
         headers = {
-            'User-Agent': userAgents[0]
+            'User-Agent': random.choice(userAgents)
         }
         return headers
     
@@ -74,6 +73,7 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
             return False
         try:
             r = requests.get(url, headers=self.getHeaders())
+            r.raise_for_status()
             print('%s %s' % (r.status_code, url))
             if r.status_code != 200:
                 time.sleep(5)
