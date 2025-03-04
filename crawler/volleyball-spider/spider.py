@@ -16,7 +16,7 @@ from selenium.webdriver.chrome.options import Options
 
 def remove_tags(soup, tags):
     for tag in soup.find_all(tags):
-        tag.extract()
+        tag.decompose()
     return soup
 
 def remove_attrs(soup, attrs):
@@ -154,9 +154,9 @@ class SportsSinaSpider(VolleyballSpider):
             comment.extract()
         
         for tag in soup.find_all('div', class_='show_statement'):
-            tag.extract()
+            tag.decompose()
         for tag in soup.find_all('div', id='left_hzh_ad'):
-            tag.extract()
+            tag.decompose()
 
         content_ = soup.find("div", class_="article")
         content = content_.prettify()
@@ -306,7 +306,7 @@ class VolleyChinaSpider(VolleyballSpider):
 
             desc_ = item.select_one('span.new-info p')
             for a in desc_.find_all('a'):
-                a.extract()
+                a.decompose()
             article['desc'] = desc_.get_text(strip=True)
 
             poster_ = item.select_one('span.new-info a img')
@@ -400,12 +400,12 @@ class VolSportsSpider(VolleyballSpider):
             return
         soup = BeautifulSoup(r.content, "html.parser")
         soup = remove_tags(soup, ['iframe', 'script'])
-        soup = remove_attrs(soup, ['id', 'srcset'])
+        soup = remove_attrs(soup, ['id', 'srcset', 'sizes', 'aria-describedby', 'data-recalc-dims'])
 
         content_ = soup.find("div", class_="post-content")
         
         for blockquote in content_.find_all('blockquote', class_='instagram-media'):
-            blockquote.extract()
+            blockquote.decompose()
 
         # 删除每个h标签及其后面的内容
         for h in content_.find_all(['h2', 'h3']):
@@ -414,8 +414,8 @@ class VolSportsSpider(VolleyballSpider):
             for tag in h.find_next_siblings():
                 if tag.name == h.name:
                     break
-                tag.extract()
-            h.extract()
+                tag.decompose()
+            h.decompose()
 
         content = content_.prettify()
         return content
@@ -485,7 +485,7 @@ class SportsVSpider(VolleyballSpider):
         content_ = soup.find("div", class_="article-content")
 
         for tag in content_.find_all('div', class_='adv-article-content'):
-            tag.extract()
+            tag.decompose()
 
         for tag in content_.find_all('figure', class_="image"):
             for tag2 in tag.find_all('figcaption'):
@@ -592,10 +592,10 @@ class FIVBSpider(VolleyballSpider):
         content_ = main.find('article', class_='post').find('div', class_='container').find('div', class_='row')
 
         for blockquote in content_.find_all('blockquote', class_='instagram-media'):
-            blockquote.extract()
+            blockquote.decompose()
         
         for div in content_.find_all('div', class_='spacer-3'):
-            div.extract()
+            div.decompose()
 
         for figure in content_.find_all('figure'):
             for figcaption in figure.find_all('figcaption'):
