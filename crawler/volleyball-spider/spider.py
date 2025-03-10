@@ -611,3 +611,69 @@ class FIVBSpider(VolleyballSpider):
         content = content_.prettify().replace('\n', '')
 
         return { 'title': title, 'desc': desc, 'content': content, 'publish_time': publish_time, 'poster': poster }
+
+class SportsCCTVSpider(VolleyballSpider):
+    def __init__(self):
+        super().__init__()
+        self.url = 'https://sports.cctv.com/volleyball/'
+
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # 启用无头模式
+        chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
+        chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
+        self.driver = webdriver.Chrome(options=chrome_options)
+
+    def __del__(self):
+        self.driver.close()
+
+    def start(self):
+        self.parse_list(self.url)
+
+    def parse_list(self, url):
+        try:
+            self.driver.get(url)
+            # 等待某个元素加载完成
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "title")))
+            print(url)
+        except Exception as e:
+            self.printException(e)
+
+        soup = BeautifulSoup(self.driver.page_source, "html.parser")
+
+        list = soup.find("div", class_='bot_list')
+        items = list.find_all("li", recursive=True)
+
+        news = []
+        for item in items:
+            article = {
+                'source': 'cctv',
+                'title': '',
+                'url': '',
+                'author': '央视体育',
+                'desc': '',
+                'poster': '',
+                'content': '',
+                'publish_time': ''
+            }
+
+            # article['url'] = item.select_one('div.title>a').get('href')
+
+            # info = self.parse_item(article['url'])
+
+            # article['title'] = info['title']
+            # article['desc'] = info['desc']
+            # article['content'] = info['content']
+            # article['publish_time'] = info['publish_time']
+            # article['poster'] = info['poster']
+
+            print(article)
+
+            news.append(article)
+            # if len(news) == 10:
+            #     self.hound({'news': json.dumps(news)})
+            #     news = []
+
+            time.sleep(1)
+
+        # if len(news) > 0:
+        #     self.hound({'news': json.dumps(news)})
