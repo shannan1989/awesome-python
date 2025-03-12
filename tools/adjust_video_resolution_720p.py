@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import os
 import subprocess
 
@@ -24,7 +26,7 @@ def adjust_video_resolution_720p(input_path):
     width, height = get_video_resolution(input_path)
     # 检查视频分辨率是否不低于 720P
     if height <= 720:
-        print(f"跳过<= 720P 的视频: {input_path}")
+        print(f"跳过视频 (分辨率{height}P): {input_path}")
         return
 
 
@@ -36,6 +38,7 @@ def adjust_video_resolution_720p(input_path):
     # 定义 ffmpeg 命令，将视频转换为 MP4 格式且分辨率为 720P
     command = [
         'ffmpeg',
+        '-loglevel', 'warning',
         '-i', input_path,
         '-s', '1280x720',
         '-c:v', 'libx264',
@@ -44,7 +47,7 @@ def adjust_video_resolution_720p(input_path):
     ]
     try:
         subprocess.run(command, check=True)
-        print(f"成功转换: {input_path}")
+        print(f"转换成功: {input_path}")
     except subprocess.CalledProcessError as e:
         print(f"转换失败: {input_path}, 错误信息: {e}")
 
