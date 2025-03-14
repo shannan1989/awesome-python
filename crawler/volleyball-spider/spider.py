@@ -2,17 +2,17 @@ import abc
 import json
 import random
 import time
-import requests
-
-from bs4 import BeautifulSoup, Comment
 from datetime import datetime
 from urllib.parse import urlparse
 
+import requests
+from bs4 import BeautifulSoup, Comment
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.ui import WebDriverWait
+
 
 def remove_tags(soup, tags):
     for tag in soup.find_all(tags):
@@ -63,8 +63,7 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
         return href
 
     def printException(self, e):
-        print('Exception occurs at line %s' %
-              (e.__traceback__.tb_lineno.__str__()))
+        print('Exception occurs at line %s' % (e.__traceback__.tb_lineno.__str__()))
         print(e)
 
     def request(self, url, tries=1):
@@ -249,7 +248,7 @@ class VolleyballChinaSpider(VolleyballSpider):
             self.driver.get(url)
 
             # 等待某个元素加载完成
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
+            WebDriverWait(self.driver, 10).until(expected_conditions.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
 
             print(url)
             soup = BeautifulSoup(self.driver.page_source, "html.parser")
