@@ -41,8 +41,10 @@ def adjust_video_resolution_720p(input_path):
         '-loglevel', 'warning',
         '-i', input_path,
         '-s', '1280x720',
+        '-map_metadata', '-1',
         '-c:v', 'libx264',
-        '-c:a', 'aac',
+        '-preset', 'fast',
+        '-c:a', 'copy',
         output_path
     ]
     try:
