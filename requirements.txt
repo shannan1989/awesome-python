@@ -3,5 +3,5 @@ fake-useragent == 2.0.3
 id-validator == 1.0.20
 lxml == 5.3.1
 requests == 2.32.3
-selenium == 4.29.0
+selenium == 4.33.0
 shutils == 0.1.0
