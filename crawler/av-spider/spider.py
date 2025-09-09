@@ -74,6 +74,9 @@ class JavBusSpider(object):
         data = json.loads(r.text)
         self.ids = data.get('ids')
         self.stars = data.get('stars')
+        self.studios = data.get('studios')
+        self.series = data.get('series')
+        self.genres = data.get('genres')
 
         self.parseList(self.startUrl)
 
@@ -84,6 +87,33 @@ class JavBusSpider(object):
                 continue
             print('开始爬取女优 ' + star['name'])
             url = self.host + '/star/' + star['id']
+            self.parseList(url)
+
+        for studio in self.studios:
+            if studio['status'] < 1:
+                continue
+            if len(studio['id']) > 6:
+                continue
+            print('开始爬取片商 ' + studio['name'])
+            url = self.host + '/studio/' + studio['id']
+            self.parseList(url)
+
+        for series in self.series:
+            if series['status'] < 1:
+                continue
+            if len(series['id']) > 6:
+                continue
+            print('开始爬取系列 ' + series['name'])
+            url = self.host + '/series/' + series['id']
+            self.parseList(url)
+        
+        for genre in self.genres:
+            if genre['status'] < 1:
+                continue
+            if len(genre['id']) > 6:
+                continue
+            print('开始爬取类别 ' + genre['name'])
+            url = self.host + '/genre/' + genre['id']
             self.parseList(url)
 
     def parseList(self, url):
