@@ -1,12 +1,15 @@
 import abc
 import json
+import logging
 import random
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup, Comment
+from requests.exceptions import Timeout, ConnectionError, RequestException
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -37,12 +40,13 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
 
     def hound(self, data):
         try:
-            r = requests.post(self.houndUrl, data, headers=self.getHeaders())
+            r = requests.post(self.houndUrl, data, headers=self.get_headers())
             print(r.content)
         except Exception as e:
-            self.printException(e)
+            self.print_exception(e)
 
-    def getHeaders(self):
+    def get_headers(self) -> dict:
+        """获取请求头"""
         userAgents = [
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3.1 Safari/605.1.15',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
@@ -54,7 +58,17 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
         }
         return headers
     
-    def parseHref(self, href, url):
+    def parse_href(self, href: str, url: str) -> str:
+        """
+        解析相对链接为绝对链接
+        
+        Args:
+            href (str): 原始链接，可能是相对链接
+            url (str): 当前页面的完整URL
+            
+        Returns:
+            str: 转换后的绝对链接
+        """
         pr = urlparse(url)
         if href.startswith("//"):
             href = pr.scheme + ':' + href
@@ -62,27 +76,34 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
             href = pr.scheme + '://' + pr.netloc + href
         return href
 
-    def printException(self, e):
+    def print_exception(self, e):
         print('Exception occurs at line %s' % (e.__traceback__.tb_lineno.__str__()))
         print(e)
 
-    def request(self, url, tries=1):
-        if tries >= 5:
-            print(url, 'tries>=5')
+    def request(self, url: str, tries: int =1, max_retries: int =5):
+        """发送HTTP请求"""
+        if tries >= max_retries:
+            logging.error(f"Max retries exceeded for {url}")
             return False
         try:
-            r = requests.get(url, headers=self.getHeaders())
+            r = requests.get(url, headers=self.get_headers())
             r.raise_for_status()
             print('%s %s' % (r.status_code, url))
             if r.status_code != 200:
                 time.sleep(5)
-                return self.request(url, tries + 1)
+                return self.request(url, tries + 1, max_retries)
 
             return r
-        except Exception as e:
-            print(url, e)
+        except (Timeout, ConnectionError) as e:
+            logging.warning(f"请求超时/连接错误 {url}: {e}")
             time.sleep(5)
-            return self.request(url, tries + 1)
+            return self.request(url, tries + 1, max_retries)
+        except RequestException as e:
+            logging.error(f"请求错误 {url}: {e}")
+            return False
+        except Exception as e:
+            logging.error(f"未知错误 {url}: {e}")
+            return False
 
 
 class SportsSinaSpider(VolleyballSpider):
@@ -162,7 +183,7 @@ class SportsSinaSpider(VolleyballSpider):
 
         imgs = content_.find_all('img')
         if len(imgs) > 0:
-            poster = self.parseHref(imgs[0].get('src'), url)
+            poster = self.parse_href(imgs[0].get('src'), url)
 
         publish_time = soup.find('span', class_='date').text
         publish_time = publish_time.replace('年', '-').replace('月', '-').replace('日', '')
@@ -178,14 +199,26 @@ class VolleyballChinaSpider(VolleyballSpider):
             'https://www.volleyballchina.com/NewsInfoCategory?categoryId=520089,520090,520092,520095,534930,536678,536706'
         ]
 
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")  # 启用无头模式
-        chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
-        chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
-        self.driver = webdriver.Chrome(options=chrome_options)
-
-    def __del__(self):
-        self.driver.close()
+    @contextmanager
+    def get_driver(self):
+        driver = None
+        try:
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")  # 启用无头模式
+            chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
+            chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
+            chrome_options.add_argument("--disable-dev-shm-usage") # 禁用 /dev/shm 依赖，避免空间不足
+            driver = webdriver.Chrome(options=chrome_options)
+            yield driver
+        except Exception as e:
+            logging.error(f"Error initializing WebDriver: {e}")
+            raise
+        finally:
+            if driver:
+                try:
+                    driver.quit()
+                except Exception as e:
+                    logging.error(f"Error closing WebDriver: {e}")
 
     def start(self):
         for url in self.urls:
@@ -216,14 +249,14 @@ class VolleyballChinaSpider(VolleyballSpider):
             article['title'] = title_.text
 
             link_ = item.select_one('a.w-list-link')
-            article['url'] = self.parseHref(link_.get('href'), url)
+            article['url'] = self.parse_href(link_.get('href'), url)
 
             desc_ = item.select_one('p.w-list-info')
             article['desc'] = desc_.get_text(strip=True)
 
             poster_ = item.select_one('div.w-list-pic img')
             if poster_ is not None:
-                article['poster'] = self.parseHref(poster_.get('src'), url)
+                article['poster'] = self.parse_href(poster_.get('src'), url)
             
             info = self.parse_item(article['url'])
 
@@ -245,32 +278,33 @@ class VolleyballChinaSpider(VolleyballSpider):
         publish_time = ''
 
         try:
-            self.driver.get(url)
+            with self.get_driver() as driver:
+                driver.get(url)
+                # 等待某个元素加载完成
+                WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
 
-            # 等待某个元素加载完成
-            WebDriverWait(self.driver, 10).until(expected_conditions.presence_of_element_located((By.CLASS_NAME, "w-detailcontent")))
+                print(url)
+                soup = BeautifulSoup(driver.page_source, "html.parser")
+                soup = remove_attrs(soup, ['id', 'longdesc', 'data-link', 'data-original', 'data-user-action', 'data-user-action-time'])
 
-            print(url)
-            soup = BeautifulSoup(self.driver.page_source, "html.parser")
-            soup = remove_attrs(soup, ['id', 'longdesc', 'data-link', 'data-original', 'data-user-action', 'data-user-action-time'])
+                # Remove all comments from the HTML string
+                for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
+                    comment.extract()
 
-            # Remove all comments from the HTML string
-            for comment in soup.find_all(string=lambda string: isinstance(string, Comment)):
-                comment.extract()
+                content_ = soup.find("div", class_="w-detailcontent")
+                if content_ is not None:
+                    content = content_.prettify()
 
-            content_ = soup.find("div", class_="w-detailcontent")
-            if content_ is not None:
-                content = content_.prettify()
-
-            publish_time = soup.find('span', class_="w-createtime-date").text + ' ' + soup.find('span', class_="w-createtime-time").text
+                publish_time = soup.find('span', class_="w-createtime-date").text + ' ' + soup.find('span', class_="w-createtime-time").text
         except Exception as e:
-            self.printException(e)
+            self.print_exception(e)
 
         return { 'content': content, 'publish_time': publish_time }
 
 
 class VolleyChinaSpider(VolleyballSpider):
     def __init__(self):
+        super().__init__()
         self.url = "http://www.volleychina.org/allnews/index.html"
 
     def start(self):
@@ -342,6 +376,7 @@ class VolleyChinaSpider(VolleyballSpider):
 
 class VolSportsSpider(VolleyballSpider):
     def __init__(self):
+        super().__init__()
         self.url = "https://volsports.co/blog/category/news/"
 
     def start(self):
@@ -422,6 +457,7 @@ class VolSportsSpider(VolleyballSpider):
 
 class SportsVSpider(VolleyballSpider):
     def __init__(self):
+        super().__init__()
         self.url = "https://www.sportsv.net/volleyball"
 
     def start(self):
@@ -501,7 +537,7 @@ class SportsVSpider(VolleyballSpider):
         try:
             content = content_.prettify()
         except Exception as e:
-            self.printException(e)
+            self.print_exception(e)
         return content
 
 
@@ -583,7 +619,7 @@ class FIVBSpider(VolleyballSpider):
         meta = main.find('div', class_='meta position-relative')
 
         cover = meta.select_one('img', class_='cover')
-        poster = self.parseHref(cover.get('src'), url)
+        poster = self.parse_href(cover.get('src'), url)
 
         publish_time_ = meta.find('div', class_='date').text.strip()
         publish_time = datetime.strptime(publish_time_, "%b %d, %Y").strftime("%Y-%m-%d")
