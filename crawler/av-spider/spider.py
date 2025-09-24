@@ -96,7 +96,7 @@ class JavBusSpider(object):
                 continue
             print('开始爬取片商 ' + studio['name'])
             url = self.host + '/studio/' + studio['id']
-            self.parseList(url)
+            # self.parseList(url)
 
         for series in self.series:
             if series['status'] < 1:
@@ -114,7 +114,7 @@ class JavBusSpider(object):
                 continue
             print('开始爬取类别 ' + genre['name'])
             url = self.host + '/genre/' + genre['id']
-            self.parseList(url)
+            # self.parseList(url)
 
     def parseList(self, url):
         r = self.request(url)
@@ -210,6 +210,7 @@ class JavBusSpider(object):
             movie['samples'].append(_img.attrib.get('href'))
 
         stars = html.xpath("//div[@id='avatar-waterfall']/a")
+        star_names = []
         for _star in stars:
             star_id = _star.attrib.get('href').split('/').pop()
             try:
@@ -224,6 +225,7 @@ class JavBusSpider(object):
                 star_avatar = self.host + star_avatar
             star = {'id': star_id, 'name': star_name, 'avatar': star_avatar}
             movie['stars'].append(star)
+            star_names.append(star_name)
 
         infos = html.xpath("//div[@class='col-md-3 info']/p")
         for _info in infos:
@@ -241,6 +243,9 @@ class JavBusSpider(object):
         for genre in genres:
             genre_id = genre.attrib.get('href').split('/').pop()
             genre_name = genre.text
+            if any(star_name == genre_name for star_name in star_names):
+                print('类别名与女优名重复', genre_name)
+                continue
             movie['genres'].append({'id': genre_id, 'name': genre_name})
 
         infos = html.xpath("//div[@class='col-md-3 info']/p/a")
