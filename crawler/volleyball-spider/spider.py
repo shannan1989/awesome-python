@@ -179,7 +179,8 @@ class SportsSinaSpider(VolleyballSpider):
             tag.decompose()
 
         content_ = soup.find("div", class_="article")
-        content = content_.prettify()
+        if content_ is not None:
+            content = content_.prettify()
 
         imgs = content_.find_all('img')
         if len(imgs) > 0:
