@@ -21,7 +21,7 @@ if __name__ == '__main__':
     start = time.time()
 
     JavBusSpider(BaseUrl, HoundUrl, JavBusUrl).start()
-    AvmooSpider(BaseUrl, HoundUrl, StartUrl).start()
+    # AvmooSpider(BaseUrl, HoundUrl, StartUrl).start()
 
     end = time.time()
 
