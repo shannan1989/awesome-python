@@ -1,0 +1,11 @@
+# 基础镜像（alpine 更轻量化，slim 兼容性更好）
+FROM docker.1ms.run/python:3.10-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖清单
+COPY requirements.txt .
+
+# 安装依赖（加清华源提速，--no-cache-dir 减少镜像体积）
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
