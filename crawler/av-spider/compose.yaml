@@ -1,0 +1,11 @@
+
+services:
+  av-spider:
+    build: .  # 基于当前目录的 Dockerfile 构建镜像
+    image: av-spider:latest  # 指定镜像名+标签
+    volumes:
+      - ./:/app  # 挂载当前目录到容器内 /app 目录
+    working_dir: /app  # 容器内默认工作目录
+    environment:
+      - LANG=C.UTF-8  # 解决中文乱码问题
+    command: python main.py
