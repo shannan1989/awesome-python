@@ -8,4 +8,5 @@ services:
     working_dir: /app  # 容器内默认工作目录
     environment:
       - LANG=C.UTF-8  # 解决中文乱码问题
+      - TZ=Asia/Shanghai
     command: python main.py
