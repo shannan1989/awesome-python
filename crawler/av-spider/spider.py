@@ -185,6 +185,7 @@ class JavBusSpider(object):
 
         movie = {
             'id': '',
+            'source': 'javbus',
             'title': '',
             'poster': '',
             'serial_number': '',
@@ -223,7 +224,7 @@ class JavBusSpider(object):
                 star_avatar = ''
             if star_avatar.startswith("/"):
                 star_avatar = self.host + star_avatar
-            star = {'id': star_id, 'name': star_name, 'avatar': star_avatar}
+            star = {'id': star_id, 'source': 'javbus', 'name': star_name, 'avatar': star_avatar}
             movie['stars'].append(star)
             star_names.append(star_name)
 
@@ -426,6 +427,7 @@ class AvmooSpider(object):
 
         movie = {
             'id': '',
+            'source': 'avmoo',
             'title': '',
             'poster': '',
             'serial_number': '',
@@ -461,7 +463,7 @@ class AvmooSpider(object):
             star_avatar = _star.xpath(".//img")[0].attrib.get('src')
             if 'nowprinting' in star_avatar:
                 star_avatar = ''
-            star = {'id': star_id, 'name': star_name, 'avatar': star_avatar}
+            star = {'id': star_id, 'source': 'avmoo', 'name': star_name, 'avatar': star_avatar}
             movie['stars'].append(star)
 
         infos = html.xpath("//div[@class='col-md-3 info']/p")
