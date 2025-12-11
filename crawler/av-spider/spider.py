@@ -94,7 +94,7 @@ class JavBusSpider(object):
                 continue
             if len(studio['id']) > 6:
                 continue
-            print('开始爬取片商 ' + studio['name'])
+            print('开始爬取片商 ' + (studio.get('aka') or studio['name']))
             url = self.host + '/studio/' + studio['id']
             # self.parseList(url)
 
@@ -103,7 +103,7 @@ class JavBusSpider(object):
                 continue
             if len(series['id']) > 6:
                 continue
-            print('开始爬取系列 ' + series['name'])
+            print('开始爬取系列 ' + (series.get('aka') or series['name']))
             url = self.host + '/series/' + series['id']
             self.parseList(url)
         
