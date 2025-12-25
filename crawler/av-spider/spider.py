@@ -242,6 +242,8 @@ class JavBusSpider(object):
 
         genres = html.xpath("//div[@class='col-md-3 info']/p/span[@class='genre']//a")
         for genre in genres:
+            if 'genre' not in genre.attrib.get('href'):
+                continue
             genre_id = genre.attrib.get('href').split('/').pop()
             genre_name = genre.text
             if any(star_name == genre_name for star_name in star_names):
