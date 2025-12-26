@@ -210,24 +210,6 @@ class JavBusSpider(object):
         for _img in sample_images:
             movie['samples'].append(_img.attrib.get('href'))
 
-        stars = html.xpath("//div[@id='avatar-waterfall']/a")
-        star_names = []
-        for _star in stars:
-            star_id = _star.attrib.get('href').split('/').pop()
-            try:
-                star_name = _star.xpath(".//span")[0].text
-            except Exception as e:
-                star_name = ''
-                self.printException(e)
-            star_avatar = _star.xpath(".//img")[0].attrib.get('src')
-            if 'nowprinting' in star_avatar:
-                star_avatar = ''
-            if star_avatar.startswith("/"):
-                star_avatar = self.host + star_avatar
-            star = {'id': star_id, 'source': 'javbus', 'name': star_name, 'avatar': star_avatar}
-            movie['stars'].append(star)
-            star_names.append(star_name)
-
         infos = html.xpath("//div[@class='col-md-3 info']/p")
         for _info in infos:
             nodes = _info.xpath('node()')
@@ -240,16 +222,39 @@ class JavBusSpider(object):
             if type(nodes[0]) == etree._Element and nodes[0].text == '長度:':
                 movie['duration'] = str(nodes[1]).strip()
 
+        star_names = {}
         genres = html.xpath("//div[@class='col-md-3 info']/p/span[@class='genre']//a")
         for genre in genres:
-            if 'genre' not in genre.attrib.get('href'):
+            href = genre.attrib.get('href')
+            if 'star' in href:
+                star_id = href.split('/').pop()
+                star_name = genre.text
+                star_names[star_id] = star_name
                 continue
-            genre_id = genre.attrib.get('href').split('/').pop()
+            if 'genre' not in href:
+                continue
+            genre_id = href.split('/').pop()
             genre_name = genre.text
-            if any(star_name == genre_name for star_name in star_names):
-                print('类别名与女优名重复', genre_name)
-                continue
             movie['genres'].append({'id': genre_id, 'name': genre_name})
+
+        stars = html.xpath("//div[@id='avatar-waterfall']/a")
+        for _star in stars:
+            star_id = _star.attrib.get('href').split('/').pop()
+            if star_names[star_id] is not None:
+                star_name = star_names[star_id]
+            else:
+                try:
+                    star_name = _star.xpath(".//span")[0].text
+                except Exception as e:
+                    star_name = ''
+                    self.printException(e)
+            star_avatar = _star.xpath(".//img")[0].attrib.get('src')
+            if 'nowprinting' in star_avatar:
+                star_avatar = ''
+            if star_avatar.startswith("/"):
+                star_avatar = self.host + star_avatar
+            star = {'id': star_id, 'source': 'javbus', 'name': star_name, 'avatar': star_avatar}
+            movie['stars'].append(star)
 
         infos = html.xpath("//div[@class='col-md-3 info']/p/a")
         for info in infos:
