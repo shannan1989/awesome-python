@@ -5,8 +5,9 @@ import time
 from shutils import runtime
 from shutils.settings import Settings
 
-from spider import AvmooSpider, JavBusSpider
-from airav import AirAvSpider
+from airav_spider import AirAvSpider
+from avmoo_spider import AvmooSpider
+from javbus_spider import JavBusSpider
 
 config = Settings.instance()
 CrawlInterval = config.getint('settings', 'crawl_interval')
