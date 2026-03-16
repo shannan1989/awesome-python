@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import json
+import time
 from lxml import etree
 from multiprocessing.dummy import Pool
 from urllib.parse import urlparse, parse_qs
