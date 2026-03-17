@@ -4,7 +4,7 @@ import json
 import time
 from datetime import datetime
 from lxml import etree
-from multiprocessing.dummy import Pool
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from base_spider import BaseSpider
 
@@ -16,6 +16,8 @@ class JavBusSpider(BaseSpider):
 
         self.session.cookies.set('existmag', 'all', path='/', domain='www.javbus.com')
 
+        self.executor = None
+
     def start(self):
         r = self.request(self.baseUrl)
         data = json.loads(r.text)
@@ -25,43 +27,50 @@ class JavBusSpider(BaseSpider):
         self.series = data.get('series')
         self.genres = data.get('genres')
 
-        self.parseList(self.startUrl)
+        # 线程池在这里统一创建
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            self.executor = executor
 
-        for star in self.stars:
-            if star['subscribe'] < 1:
-                continue
-            if len(star['id']) > 6:
-                continue
-            print('开始爬取女优 ' + star['name'])
-            url = self.host + '/star/' + star['id']
-            self.parseList(url)
+            self.parseList(self.startUrl)
 
-        for studio in self.studios:
-            if studio['status'] < 1:
-                continue
-            if len(studio['id']) > 6:
-                continue
-            print('开始爬取片商 ' + (studio.get('aka') or studio['name']))
-            url = self.host + '/studio/' + studio['id']
-            # self.parseList(url)
+            for star in self.stars:
+                if star['subscribe'] < 1:
+                    continue
+                if len(star['id']) > 6:
+                    continue
+                print('开始爬取女优 ' + star['name'])
+                url = self.host + '/star/' + star['id']
+                self.parseList(url)
 
-        for series in self.series:
-            if series['status'] < 1:
-                continue
-            if len(series['id']) > 6:
-                continue
-            print('开始爬取系列 ' + (series.get('aka') or series['name']))
-            url = self.host + '/series/' + series['id']
-            self.parseList(url)
+            for studio in self.studios:
+                if studio['status'] < 1:
+                    continue
+                if len(studio['id']) > 6:
+                    continue
+                print('开始爬取片商 ' + (studio.get('aka') or studio['name']))
+                url = self.host + '/studio/' + studio['id']
+                # self.parseList(url)
 
-        for genre in self.genres:
-            if genre['status'] < 1:
-                continue
-            if len(genre['id']) > 6:
-                continue
-            print('开始爬取类别 ' + genre['name'])
-            url = self.host + '/genre/' + genre['id']
-            # self.parseList(url)
+            for series in self.series:
+                if series['status'] < 1:
+                    continue
+                if len(series['id']) > 6:
+                    continue
+                print('开始爬取系列 ' + (series.get('aka') or series['name']))
+                url = self.host + '/series/' + series['id']
+                self.parseList(url)
+
+            for genre in self.genres:
+                if genre['status'] < 1:
+                    continue
+                if len(genre['id']) > 6:
+                    continue
+                print('开始爬取类别 ' + genre['name'])
+                url = self.host + '/genre/' + genre['id']
+                # self.parseList(url)
+
+        # with 块结束时线程池自动 shutdown，等待所有任务完成后才退出
+        self.executor = None
 
     def parseList(self, url):
         r = self.request(url)
@@ -97,10 +106,12 @@ class JavBusSpider(BaseSpider):
             movies.append({'thumb': thumb, 'url': href})
 
         if len(movies) > 0:
-            pool = Pool(processes=2)
-            pool.map(self.parseMovie, movies)
-            pool.close()
-            pool.join()
+            futures = [self.executor.submit(self.parseMovie, item) for item in movies]
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    self.printException(e)
 
         time.sleep(2)
 
