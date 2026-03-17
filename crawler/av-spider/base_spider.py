@@ -4,7 +4,7 @@ import json
 import random
 import requests
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 
 class BaseSpider(object):
@@ -39,6 +39,23 @@ class BaseSpider(object):
     def printException(self, e):
         print('Exception occurs at line %s' % (e.__traceback__.tb_lineno.__str__()))
         print(e)
+
+    def parseHref(self, href: str, base_url: str) -> str:
+        """
+        将页面中获取的链接解析为绝对 URL。
+        支持三种格式：
+          - 以 http(s):// 开头的完整链接，直接返回
+          - 以 // 开头的协议相对链接，补全当前协议
+          - 以 / 开头的根相对链接，补全协议 + 域名
+        
+        Args:
+            href (str): 从页面中提取的原始链接
+            base_url (str): 当前页面的完整 URL，用于补全相对链接
+            
+        Returns:
+            str: 转换后的绝对链接
+        """
+        return urljoin(base_url, href)
 
     def request(self, url, tries=1):
         if tries >= 10:
