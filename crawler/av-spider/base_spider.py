@@ -8,9 +8,9 @@ from urllib.parse import urlparse, urljoin
 
 
 class BaseSpider(object):
-    session = requests.session()
-
     def __init__(self, baseUrl, houndUrl, startUrl):
+        self.session = requests.session()
+
         self.baseUrl = baseUrl
         self.houndUrl = houndUrl
         self.startUrl = startUrl
@@ -27,12 +27,11 @@ class BaseSpider(object):
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36 Edge/18.17763'
         ]
-        random.shuffle(userAgents)
         headers = {
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
             'Upgrade-Insecure-Requests': '1',
             'Referer': self.host,
-            'User-Agent': userAgents[0]
+            'User-Agent': random.choice(userAgents)
         }
         return headers
 
@@ -62,7 +61,7 @@ class BaseSpider(object):
             print(url, 'tries>=10')
             return False
         try:
-            r = self.session.get(url, headers=self.getHeaders())
+            r = self.session.get(url, headers=self.getHeaders(), timeout=30)
             print('%s %s' % (r.status_code, url))
             if r.status_code != 200:
                 time.sleep(5)
