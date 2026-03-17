@@ -75,22 +75,7 @@ class AirAvSpider(BaseSpider):
 
         html = etree.HTML(r.content.decode('utf-8', errors="ignore"))
 
-        movie = {
-            'id': '',
-            'source': self.source,
-            'title': '',
-            'poster': '',
-            'serial_number': '',
-            'samples': [],
-            'duration': '',
-            'release_date': '1990-01-01',
-            'stars': [],
-            'directors': [],
-            'genres': [],
-            'series': [],
-            'studios': [],
-            'labels': []
-        }
+        movie = self._newMovie()
 
         movie['id'] = item['id']
         movie['title'] = html.xpath("//div[@class='video-title my-3']/h1")[0].text
