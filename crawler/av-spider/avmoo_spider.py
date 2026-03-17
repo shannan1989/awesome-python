@@ -5,7 +5,6 @@ import time
 from datetime import datetime
 from lxml import etree
 from multiprocessing.dummy import Pool
-from urllib.parse import urlparse
 
 from base_spider import BaseSpider
 
@@ -39,8 +38,6 @@ class AvmooSpider(BaseSpider):
         if r is False:
             return
 
-        pr = urlparse(url)
-
         html = etree.HTML(r.content)
 
         # 演员信息
@@ -66,9 +63,7 @@ class AvmooSpider(BaseSpider):
         movies = []
         items = html.xpath("//div[@class='item']//a[@class='movie-box']")
         for _item in items:
-            href = _item.attrib.get('href')
-            if href.startswith("//"):
-                href = pr.scheme + ':' + href
+            href = self.parseHref(_item.attrib.get('href'), url)
 
             movie_id = href.split('/').pop()
             if movie_id in self.ids:
@@ -95,9 +90,7 @@ class AvmooSpider(BaseSpider):
         # 下一页
         nextpage = html.xpath("//div/ul/li/a[@name='nextpage']")
         if len(nextpage) > 0:
-            href = nextpage[0].attrib.get('href')
-            if href.startswith("/"):
-                href = pr.scheme + '://' + pr.netloc + href
+            href = self.parseHref(nextpage[0].attrib.get('href'), url)
             print('next page')
             self.parseList(href, next)
 
