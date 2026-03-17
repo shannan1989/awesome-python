@@ -72,7 +72,7 @@ class JavBusSpider(BaseSpider):
 
         html = etree.HTML(r.content)
 
-        next = False
+        goNext = False
         movies = []
         items = html.xpath("//div[@class='item']//a[@class='movie-box']")
         for _item in items:
@@ -83,7 +83,7 @@ class JavBusSpider(BaseSpider):
                 if date1 < date2:
                     continue
                 else:
-                    next = True
+                    goNext = True
 
             href = self.parseHref(_item.attrib.get('href'), url)
 
@@ -106,7 +106,7 @@ class JavBusSpider(BaseSpider):
 
         time.sleep(2)
 
-        if next == False:
+        if goNext == False:
             return
 
         # 下一页
