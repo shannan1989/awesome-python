@@ -5,7 +5,6 @@ import time
 from datetime import datetime
 from lxml import etree
 from multiprocessing.dummy import Pool
-from urllib.parse import urlparse
 
 from base_spider import BaseSpider
 
@@ -71,8 +70,6 @@ class JavBusSpider(BaseSpider):
         if r is False:
             return
 
-        pr = urlparse(url)
-
         html = etree.HTML(r.content)
 
         next = False
@@ -88,9 +85,7 @@ class JavBusSpider(BaseSpider):
                 else:
                     next = True
 
-            href = _item.attrib.get('href')
-            if href.startswith("//"):
-                href = pr.scheme + ':' + href
+            href = self.parseHref(_item.attrib.get('href'), url)
 
             movie_id = href.split('/').pop()
             if movie_id in self.ids:
@@ -117,9 +112,7 @@ class JavBusSpider(BaseSpider):
         # 下一页
         nextpage = html.xpath("//div/ul/li/a[@id='next']")
         if len(nextpage) > 0:
-            href = nextpage[0].attrib.get('href')
-            if href.startswith("/"):
-                href = pr.scheme + '://' + pr.netloc + href
+            href = self.parseHref(nextpage[0].attrib.get('href'), url)
             print('下一页：' + href)
             self.parseList(href)
         else:
@@ -152,9 +145,7 @@ class JavBusSpider(BaseSpider):
 
         movie['id'] = url.split('/').pop()
         movie['title'] = html.xpath("//div[@class='container']/h3")[0].text
-        movie['poster'] = html.xpath("//a[@class='bigImage']/img")[0].attrib.get('src')
-        if movie['poster'].startswith("/"):
-            movie['poster'] = self.host + movie['poster']
+        movie['poster'] = self.parseHref(html.xpath("//a[@class='bigImage']/img")[0].attrib.get('src'), url)
 
         sample_images = html.xpath("//div[@id='sample-waterfall']//a[@class='sample-box']")
         for _img in sample_images:
@@ -201,8 +192,8 @@ class JavBusSpider(BaseSpider):
             star_avatar = _star.xpath(".//img")[0].attrib.get('src')
             if 'nowprinting' in star_avatar:
                 star_avatar = ''
-            if star_avatar.startswith("/"):
-                star_avatar = self.host + star_avatar
+            else:
+                star_avatar = self.parseHref(star_avatar, url)
             star = {'id': star_id, 'source': self.source, 'name': star_name, 'avatar': star_avatar}
             movie['stars'].append(star)
 
