@@ -102,22 +102,7 @@ class AvmooSpider(BaseSpider):
 
         html = etree.HTML(r.content)
 
-        movie = {
-            'id': '',
-            'source': self.source,
-            'title': '',
-            'poster': '',
-            'serial_number': '',
-            'samples': [],
-            'duration': '',
-            'release_date': '1990-01-01',
-            'stars': [],
-            'directors': [],
-            'genres': [],
-            'series': [],
-            'studios': [],
-            'labels': []
-        }
+        movie = self._newMovie()
 
         movie['id'] = url.split('/').pop()
         movie['title'] = html.xpath("//div[@class='container']/h3")[0].text
