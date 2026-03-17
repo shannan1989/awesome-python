@@ -14,9 +14,7 @@ class JavBusSpider(BaseSpider):
         super(JavBusSpider, self).__init__(baseUrl, houndUrl, startUrl)
         self.source = 'javbus'
 
-    def request(self, url, tries=1):
         self.session.cookies.set('existmag', 'all', path='/', domain='www.javbus.com')
-        return super(JavBusSpider, self).request(url, tries)
 
     def start(self):
         r = self.request(self.baseUrl)
