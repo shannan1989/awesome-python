@@ -33,7 +33,7 @@ class AvmooSpider(BaseSpider):
             url = self.host + '/cn/star/' + star['id']
             self.parseList(url, star['subscribe'] >= 1)
 
-    def parseList(self, url, next):
+    def parseList(self, url, goNext):
         r = self.request(url)
         if r is False:
             return
@@ -41,7 +41,7 @@ class AvmooSpider(BaseSpider):
         html = etree.HTML(r.content)
 
         # 演员信息
-        if ('/star/' in url) & ('page' not in url):
+        if ('/star/' in url) and ('page' not in url):
             star_id = url.split('/').pop()
             _infos = []
             infos = html.xpath('//div[@class="avatar-box"]//div[@class="photo-info"]/p')
@@ -56,7 +56,7 @@ class AvmooSpider(BaseSpider):
             }
             self.hound(data)
 
-            if next == False:
+            if goNext == False:
                 time.sleep(1)
                 return
 
@@ -84,7 +84,7 @@ class AvmooSpider(BaseSpider):
 
         time.sleep(2)
 
-        if next == False:
+        if goNext == False:
             return
 
         # 下一页
@@ -92,7 +92,7 @@ class AvmooSpider(BaseSpider):
         if len(nextpage) > 0:
             href = self.parseHref(nextpage[0].attrib.get('href'), url)
             print('next page')
-            self.parseList(href, next)
+            self.parseList(href, goNext)
 
     def parseMovie(self, item):
         url = item['url']
