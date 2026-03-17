@@ -99,3 +99,21 @@ class BaseSpider(object):
             'movies': json.dumps(movies)
         }
         self.hound(data)
+
+    def _newMovie(self) -> dict:
+        return {
+            'id': '',
+            'source': self.source,
+            'title': '',
+            'poster': '',
+            'serial_number': '',
+            'samples': [],
+            'duration': '',
+            'release_date': '1990-01-01',
+            'stars': [],
+            'directors': [],
+            'genres': [],
+            'series': [],
+            'studios': [],
+            'labels': []
+        }
