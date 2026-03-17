@@ -85,6 +85,8 @@ class JavBusSpider(BaseSpider):
         for _item in items:
             dates = _item.xpath(".//div[@class='photo-info']//date")
             if len(dates) == 2:
+                if dates[1].text == '0000-00-00':
+                    continue
                 date1 = datetime.strptime(dates[1].text, "%Y-%m-%d")
                 date2 = datetime.strptime('2023-12-15', "%Y-%m-%d")
                 if date1 < date2:
