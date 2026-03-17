@@ -14,24 +14,6 @@ class AirAvSpider(BaseSpider):
         super(AirAvSpider, self).__init__(baseUrl, houndUrl, startUrl)
         self.source = 'airav'
 
-    def parse_href(self, href: str, url: str) -> str:
-        """
-        解析相对链接为绝对链接
-        
-        Args:
-            href (str): 原始链接，可能是相对链接
-            url (str): 当前页面的完整URL
-            
-        Returns:
-            str: 转换后的绝对链接
-        """
-        pr = urlparse(url)
-        if href.startswith("//"):
-            href = pr.scheme + ':' + href
-        elif href.startswith("/"):
-            href = pr.scheme + '://' + pr.netloc + href
-        return href
-
     def start(self):
         r = self.request(self.baseUrl)
 
@@ -54,7 +36,7 @@ class AirAvSpider(BaseSpider):
         movies = []
         items = html.xpath("//div[@class='oneVideo-top']//a")
         for _item in items:
-            href = self.parse_href(_item.attrib.get('href'), url)
+            href = self.parseHref(_item.attrib.get('href'), url)
 
             query_params = parse_qs(urlparse(href).query)
             movie_id = query_params.get("hid", [None])[0]
@@ -64,7 +46,7 @@ class AirAvSpider(BaseSpider):
             thumb = ''
             thumbs = _item.xpath(".//img")
             for _thumb in thumbs:
-                thumb = self.parse_href(_thumb.attrib.get('src'), url)
+                thumb = self.parseHref(_thumb.attrib.get('src'), url)
 
             movies.append({'id': movie_id, 'thumb': thumb, 'url': href})
 
@@ -79,9 +61,7 @@ class AirAvSpider(BaseSpider):
         # 下一页
         nextpage = html.xpath("//div/ul/li/a[@id='next']")
         if len(nextpage) > 0:
-            href = nextpage[0].attrib.get('href')
-            if href.startswith("/"):
-                href = pr.scheme + '://' + pr.netloc + href
+            href = self.parseHref(nextpage[0].attrib.get('href'), url)
             print('下一页：' + href)
             self.parseList(href)
         else:
@@ -128,8 +108,8 @@ class AirAvSpider(BaseSpider):
             star_avatar = _star.xpath(".//img")[0].attrib.get('src')
             if 'nowprinting' in star_avatar:
                 star_avatar = ''
-            if star_avatar.startswith("/"):
-                star_avatar = self.host + star_avatar
+            else:
+                star_avatar = self.parseHref(star_avatar, url)
             star = {'id': star_id, 'source': self.source, 'name': star_name, 'avatar': star_avatar}
             movie['stars'].append(star)
 
