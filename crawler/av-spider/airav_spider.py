@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import json
+import re
 import time
 from lxml import etree
 from multiprocessing.dummy import Pool
@@ -97,13 +98,16 @@ class AirAvSpider(BaseSpider):
 
         html = etree.HTML(r.content.decode('utf-8', errors="ignore"))
 
-        # 1. 组装影片基础信息，并解析描述和播放地址
+        # 1. 组装影片基础信息，并解析描述、播放地址和封面
         movie = self._newMovie()
 
         movie['id'] = item['id']
         movie['title'] = html.xpath("//div[@class='video-title my-3']/h1")[0].text
-        movie['poster'] = item['thumb']
-        movie['desc'], movie['video_url'] = self._parse_video_metadata(html, url)
+        desc, video_url, poster, duration = self._parse_video_metadata(html, url)
+        movie['desc'] = desc
+        movie['video_url'] = video_url
+        movie['poster'] = poster or item['thumb']
+        movie['duration'] = 0 # 鉴于数据源的时长不准确，暂时设为0
 
         # 2. 解析演员及头像信息
         stars = html.xpath("//div[@id='avatar-waterfall']/a")
@@ -166,11 +170,13 @@ class AirAvSpider(BaseSpider):
         time.sleep(1)
 
     def _parse_video_metadata(self, html, page_url):
-        """从详情页解析影片描述和视频播放地址。"""
+        """从详情页解析影片描述、播放地址、封面和时长。"""
         description = str(html.xpath(
             "string((//div[contains(@class, 'video-info')]/p)[1])"
         )).strip()
         video_url = ''
+        poster = ''
+        duration = 0
 
         # 1. 从 JSON-LD 获取播放地址，并在正文描述缺失时作为回退
         for raw_metadata in html.xpath("//script[@type='application/ld+json']/text()"):
@@ -183,6 +189,12 @@ class AirAvSpider(BaseSpider):
                 continue
             description = description or str(metadata.get('description') or '').strip()
             video_url = str(metadata.get('contentUrl') or '').strip()
+            duration = self._parse_duration_minutes(metadata.get('duration'))
+            thumbnail_urls = metadata.get('thumbnailUrl') or []
+            if isinstance(thumbnail_urls, list) and thumbnail_urls:
+                poster = str(thumbnail_urls[0]).strip()
+            elif isinstance(thumbnail_urls, str):
+                poster = thumbnail_urls.strip()
             if video_url:
                 break
 
@@ -194,5 +206,19 @@ class AirAvSpider(BaseSpider):
 
         if video_url:
             video_url = self.parseHref(video_url, page_url)
+        if poster:
+            poster = self.parseHref(poster, page_url)
 
-        return description, video_url
+        return description, video_url, poster, duration
+
+    def _parse_duration_minutes(self, duration):
+        """将 ISO 8601 视频时长转换为整数分钟。"""
+        match = re.fullmatch(
+            r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?',
+            str(duration or '').strip()
+        )
+        if not match or not any(match.groups()):
+            return 0
+
+        hours, minutes, seconds = match.groups(default='0')
+        return int(hours) * 60 + int(minutes) + int(float(seconds) // 60)

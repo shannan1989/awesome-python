@@ -78,10 +78,10 @@ JavBus 会为 `www.javbus.com` 设置 `existmag=all` Cookie。日期过滤仅作
 | `title` | string | 空字符串 | 影片标题。 |
 | `desc` | string | 不适用 | AirAv 从详情正文提取的影片描述；正文缺失时回退到 `VideoObject` JSON-LD。 |
 | `video_url` | string | 不适用 | AirAv 从 JSON-LD 的 `contentUrl` 提取的播放地址；缺失时回退到 `<video>` 的 `<source>`。 |
-| `poster` | string | 空字符串 | 封面图地址。 |
+| `poster` | string | 空字符串 | AirAv 优先使用 `VideoObject.thumbnailUrl` 的第一条地址，缺失时使用列表页缩略图。 |
 | `serial_number` | string | 空字符串 | 识别码。 |
 | `samples` | array | `[]` | 样图地址列表。 |
-| `duration` | string | 空字符串 | 时长。 |
+| `duration` | integer/string | 空字符串 | AirAv 将 JSON-LD 的 ISO 8601 时长转换为整数分钟，无效时为 `0`；其他来源保留页面原值。 |
 | `release_date` | string | `1990-01-01` | 发行日期。 |
 | `stars`、`directors`、`genres`、`series`、`studios`、`labels` | array | `[]` | 演员、导演、类别、系列、片商和厂牌关联。 |
 
