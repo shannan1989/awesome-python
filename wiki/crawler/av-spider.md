@@ -36,7 +36,7 @@ flowchart TD
 
 | 来源 | 列表范围 | 并发方式 | 分页规则 |
 | --- | --- | --- | --- |
-| AirAv | 配置的起始列表 | 2 个线程 | 发现下一页链接时继续。 |
+| AirAv | 配置的起始列表 | 2 个线程 | 循环读取“下一页/下一頁”链接，并在达到 `AirAvSpider` 的 `max_pages` 后停止；当前值为 `10`。 |
 | JavBus | 起始列表、已订阅且 ID 长度不超过 6 的演员、已启用且 ID 长度不超过 6 的系列 | 2 个线程 | 仅当列表项包含两个日期节点，且第二个日期不早于 `2023-12-15` 时继续下一页。 |
 | Avmoo | 已实现，默认未启用 | 2 个线程 | 演员首页始终提交演员信息；仅 `subscribe >= 1` 时解析该演员的影片并继续翻页。 |
 
@@ -76,7 +76,8 @@ JavBus 会为 `www.javbus.com` 设置 `existmag=all` Cookie。日期过滤仅作
 | `id` | string | 空字符串 | 来源站点中的影片标识。 |
 | `source` | string | 当前来源 | `airav`、`javbus` 或 `avmoo`。 |
 | `title` | string | 空字符串 | 影片标题。 |
-| `des` | string | 不适用 | AirAv 详情页中提取的影片描述；基础默认对象及其他来源不会写入该字段。 |
+| `desc` | string | 不适用 | AirAv 从详情正文提取的影片描述；正文缺失时回退到 `VideoObject` JSON-LD。 |
+| `video_url` | string | 不适用 | AirAv 从 JSON-LD 的 `contentUrl` 提取的播放地址；缺失时回退到 `<video>` 的 `<source>`。 |
 | `poster` | string | 空字符串 | 封面图地址。 |
 | `serial_number` | string | 空字符串 | 识别码。 |
 | `samples` | array | `[]` | 样图地址列表。 |
@@ -85,6 +86,8 @@ JavBus 会为 `www.javbus.com` 设置 `existmag=all` Cookie。日期过滤仅作
 | `stars`、`directors`、`genres`、`series`、`studios`、`labels` | array | `[]` | 演员、导演、类别、系列、片商和厂牌关联。 |
 
 关联对象使用 `id` 与 `name` 字段；演员对象额外包含 `source` 和 `avatar`。
+
+AirAv 只提交播放地址，不下载或验证视频内容；其他来源当前不会写入 `desc` 和 `video_url`。
 
 ## 接口说明
 
