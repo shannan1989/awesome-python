@@ -104,7 +104,7 @@ class AirAvSpider(BaseSpider):
         movie['id'] = item['id']
         movie['title'] = html.xpath("//div[@class='video-title my-3']/h1")[0].text
         desc, video_url, poster, duration = self._parse_video_metadata(html, url)
-        movie['desc'] = desc
+        movie['desc'] = desc.replace(movie['title'], '').strip()
         movie['video_url'] = video_url
         movie['poster'] = poster or item['thumb']
         movie['duration'] = 0 # 鉴于数据源的时长不准确，暂时设为0
