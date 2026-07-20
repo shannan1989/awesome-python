@@ -165,6 +165,8 @@ class AirAvSpider(BaseSpider):
                 continue
             print(info_id, info_name, href)
 
+        if movie['serial_number']:
+            movie['title'] = movie['title'].replace(movie['serial_number'] + ' ' + movie['serial_number'], movie['serial_number']).strip()
         # 4. 提交单条影片数据
         self.sendMovieData(movie)
         time.sleep(1)
