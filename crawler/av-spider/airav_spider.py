@@ -209,6 +209,10 @@ class AirAvSpider(BaseSpider):
         if video_url:
             video_url = self.parseHref(video_url, page_url)
         if poster:
+            if poster.startswith('http'):
+                pr = urlparse(poster, allow_fragments=False)
+                if 'airav' in pr.netloc:
+                    poster = pr.path
             poster = self.parseHref(poster, page_url)
 
         return description, video_url, poster, duration
