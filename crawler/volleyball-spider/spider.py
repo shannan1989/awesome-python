@@ -1,6 +1,7 @@
 import abc
 import json
 import logging
+import os
 import random
 import time
 from contextlib import contextmanager
@@ -12,6 +13,7 @@ from bs4 import BeautifulSoup, Comment
 from requests.exceptions import Timeout, ConnectionError, RequestException
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -202,6 +204,7 @@ class VolleyballChinaSpider(VolleyballSpider):
 
     @contextmanager
     def get_driver(self):
+        """创建并托管用于解析动态详情页的 Chrome WebDriver。"""
         driver = None
         try:
             chrome_options = Options()
@@ -209,17 +212,30 @@ class VolleyballChinaSpider(VolleyballSpider):
             chrome_options.add_argument("--disable-gpu")  # 禁用 GPU 加速（某些系统需要）
             chrome_options.add_argument("--no-sandbox")  # 禁用沙盒（在某些环境中需要）
             chrome_options.add_argument("--disable-dev-shm-usage") # 禁用 /dev/shm 依赖，避免空间不足
-            driver = webdriver.Chrome(options=chrome_options)
+            chrome_options.add_argument(
+                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            )
+
+            chrome_binary = os.getenv('CHROME_BIN')
+            if chrome_binary:
+                chrome_options.binary_location = chrome_binary
+
+            driver_binary = os.getenv('CHROMEDRIVER_BIN')
+            service = Service(executable_path=driver_binary) if driver_binary else Service()
+            
+            driver = webdriver.Chrome(service=service, options=chrome_options)
             yield driver
         except Exception as e:
-            logging.error(f"Error initializing WebDriver: {e}")
+            logging.error(f"WebDriver 初始化失败：{e}")
             raise
         finally:
             if driver:
                 try:
                     driver.quit()
                 except Exception as e:
-                    logging.error(f"Error closing WebDriver: {e}")
+                    logging.error(f"WebDriver 关闭失败：{e}")
 
     def start(self):
         for url in self.urls:

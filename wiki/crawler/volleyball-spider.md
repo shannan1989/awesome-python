@@ -58,6 +58,12 @@ flowchart TD
 
 `VolleyballSpider.request()` 未设置显式超时，仅对超时和连接错误递归重试。初始计数为 `1`，计数达到 `5` 时停止，因此最多发出 4 次请求；`4xx/5xx` 响应和其他请求异常直接返回失败值。`parse_href()` 只补全以 `//` 或 `/` 开头的链接，不处理普通相对路径。每个来源的 `start()`、`parse_list()` 和 `parse_item()` 负责适配本来源的列表、详情及正文清理规则。
 
+### 中国排球协会 WebDriver
+
+`VolleyballChinaSpider.get_driver()` 创建并托管 Chrome WebDriver，退出上下文时会关闭浏览器。容器环境下通过环境变量显式指定 Chromium 与 ChromeDriver；其他环境未设置变量时，保留 Selenium 的默认驱动发现行为，因此 Windows 本地运行不依赖容器路径。
+
+WebDriver 使用无头模式，并关闭 GPU、Chrome 沙盒及 `/dev/shm` 依赖。详情页请求使用普通 Windows Chrome User-Agent，避免站点将 Linux 无头 Chromium 识别为受限客户端并返回 `429 Too Many Requests`。
+
 ## 新闻数据与接口说明
 
 所有来源均将新闻对象序列化为 JSON 字符串，并以表单 POST 方式发送：
@@ -103,10 +109,18 @@ flowchart TD
 
 各新闻来源 URL 当前硬编码在对应爬虫类中，不能通过 `config.ini` 修改。
 
-容器基础镜像为 `docker.1ms.run/python:3.13-slim`。构建时只复制 `requirements.txt`，并通过清华镜像以 `--no-cache-dir` 安装依赖；当前 Dockerfile 不会清理 APT 索引、升级 `pip` 或设置 `pip` 默认索引。`compose.yaml` 会将当前目录挂载到容器 `/app`，入口命令为 `python main.py`。
+容器使用以下环境变量：
+
+| 环境变量 | Docker 默认值 | 说明 |
+| --- | --- | --- |
+| `CHROME_BIN` | `/usr/bin/chromium` | Chromium 可执行文件路径；未设置时由 Selenium 按默认规则查找浏览器。 |
+| `CHROMEDRIVER_BIN` | `/usr/bin/chromedriver` | ChromeDriver 可执行文件路径；未设置时由 Selenium Manager 自动查找或下载驱动。 |
+
+容器基础镜像为 `docker.1ms.run/python:3.13-slim`。构建阶段将 Debian APT 地址替换为清华镜像源，并安装 `chromium` 与版本匹配的 `chromium-driver`，供 Selenium 无头浏览器使用；安装后会清理 APT 索引。镜像和 Compose 通过 `CHROME_BIN` 与 `CHROMEDRIVER_BIN` 环境变量显式指定两个可执行文件，避免 Selenium Manager 在 Linux ARM64 环境中因架构不受支持而无法发现驱动。随后构建过程只复制 `requirements.txt`，通过清华镜像以 `--no-cache-dir` 安装 Python 依赖；当前 Dockerfile 不会升级 `pip` 或设置 `pip` 默认索引。`compose.yaml` 会将当前目录挂载到容器 `/app`，入口命令为 `python main.py`。
 
 ## 常见问题
 
-- 中国排球协会来源依赖 Chrome WebDriver；容器镜像仅安装 Python 依赖，运行环境还需要具备可用的 Chrome 与对应驱动。
+- 中国排球协会来源依赖 Chrome WebDriver；容器镜像已安装 Chromium 和对应驱动。修改 Dockerfile 后需要重新构建镜像，旧镜像不会自动获得浏览器环境。
+- 中国排球协会详情页会拒绝 Chromium 默认的无头浏览器 User-Agent，并返回 `429 Too Many Requests`。WebDriver 使用普通 Chrome User-Agent 访问详情页；该响应表示站点识别限制，不是驱动启动失败。
 - 某个站点请求超时或连接失败时，基础请求逻辑最多发出 4 次请求后跳过该请求；其他站点仍会继续执行。
 - 页面结构变化会导致选择器无法命中。调整选择器前，应同步检查本文件中的字段和正文清理规则是否仍准确。
