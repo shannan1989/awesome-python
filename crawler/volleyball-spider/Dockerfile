@@ -1,5 +1,5 @@
 # 基础镜像（alpine 更轻量化，slim 兼容性更好）
-FROM docker.1ms.run/python:3.13-slim
+FROM docker.1ms.run/python:3.14-slim
 
 # 避免Python生成.pyc文件，减少容器体积
 ENV PYTHONDONTWRITEBYTECODE=1
