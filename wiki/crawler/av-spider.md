@@ -78,10 +78,10 @@ JavBus 会为 `www.javbus.com` 设置 `existmag=all` Cookie。日期过滤仅作
 | `title` | string | 空字符串 | 影片标题。 |
 | `desc` | string | 不适用 | AirAv 从详情正文提取的影片描述；正文缺失时回退到 `VideoObject` JSON-LD。 |
 | `video_url` | string | 不适用 | AirAv 从 JSON-LD 的 `contentUrl` 提取的播放地址；缺失时回退到 `<video>` 的 `<source>`。 |
-| `poster` | string | 空字符串 | AirAv 优先使用 `VideoObject.thumbnailUrl` 的第一条地址，缺失时使用列表页缩略图。 |
+| `poster` | string | 空字符串 | AirAv 优先使用 `VideoObject.thumbnailUrl` 的第一条地址；来源域名为 AirAv 时改用当前详情页域名，缺失时使用列表页缩略图。 |
 | `serial_number` | string | 空字符串 | 识别码。 |
 | `samples` | array | `[]` | 样图地址列表。 |
-| `duration` | integer/string | 空字符串 | AirAv 将 JSON-LD 的 ISO 8601 时长转换为整数分钟，无效时为 `0`；其他来源保留页面原值。 |
+| `duration` | integer/string | 空字符串 | AirAv 虽解析 JSON-LD 的 ISO 8601 时长，但因数据源不准确而固定提交 `0`；其他来源保留页面原值。 |
 | `release_date` | string | `1990-01-01` | 发行日期。 |
 | `stars`、`directors`、`genres`、`series`、`studios`、`labels` | array | `[]` | 演员、导演、类别、系列、片商和厂牌关联。 |
 
@@ -124,10 +124,4 @@ AirAv 只提交播放地址，不下载或验证视频内容；其他来源当�
 | `javbus_url` | string | 是 | JavBus 起始列表地址。 |
 | `airav_url` | string | 是 | AirAv 起始列表地址。 |
 
-容器基础镜像为 `docker.1ms.run/python:3.13-slim`。构建阶段会清理 APT 索引、升级 `pip`、将默认索引设为清华镜像，并以该镜像安装依赖且不保留缓存。`compose.yaml` 将当前目录挂载到容器 `/app`，并以 `python main.py` 作为启动命令。
-
-## 常见问题
-
-- 站点页面结构或字段语言变化会使 XPath 选择器无法命中；修复时需要同时核对影片对象字段是否仍保持完整。
-- `request` 对非 `200` 响应及异常会重试；计数达到 `10` 时返回失败值。列表页和详情页会跳过该资源，但 `base_url` 请求失败不会被来源启动方法单独处理。
-- 文档不会记录真实服务地址、Cookie 或其他敏感运行配置；请通过本地 `config.ini` 提供。
+容器基于 `docker.1ms.run/python:3.13-slim`，通过清华镜像安装 Python 依赖。`compose.yaml` 将当前目录挂载到 `/app`，并以 `python main.py` 启动。

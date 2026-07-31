@@ -17,7 +17,6 @@
 
 - `av-spider` 与 `volleyball-spider` 均提供 `compose.yaml`，以容器中的 `python main.py` 启动。
 - `config.ini` 为本地运行配置，已被 Git 忽略；文档只描述配置项名称，不记录真实地址或密钥。
-- AV 与排球新闻爬虫分别由各自目录的 `main.py` 独立启动，仓库没有统一调度入口。
 
 ## 当前执行模型
 

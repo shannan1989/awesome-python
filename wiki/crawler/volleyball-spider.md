@@ -16,7 +16,6 @@
 | `hound_url` | 接收新闻批次的外部服务地址。 |
 | 批次 | 爬虫累计一定数量的新闻后，以 `news` 表单字段一次提交的集合。不同来源的批次大小不同。 |
 | `crawl_interval` | 本轮抓取结束后，下次运行前的等待秒数。 |
-| 请求计数 | `request()` 的内部计数从 `1` 开始；计数达到 `5` 前最多发出 4 次请求。 |
 
 ## 运行流程
 
@@ -32,35 +31,24 @@ flowchart TD
 
 `main.py` 当前依次启用以下来源：
 
-| 类 | `source` | 站点 | 特殊行为 |
-| --- | --- | --- | --- |
-| `VolleyballChinaSpider` | `volleyballchina` | 中国排球协会 | 使用 Selenium 无头 Chrome 获取动态详情页。 |
-| `SportsVSpider` | `sportsv` | SportsV | 最多抓取前 2 页，每条新闻单独提交。 |
-| `VolSportsSpider` | `volsports` | Vol Sports | 最多抓取前 2 页。 |
-| `FIVBSpider` | `fivb` | 国际排联 | 将英文日期规范化为 `YYYY-MM-DD`。 |
-| `SportsSinaSpider` | `sports.sina` | 新浪体育 | 清理声明和广告区域。 |
-
-`VolleyChinaSpider` 已实现，但当前未在 `main.py` 中启动。
+| 类 | `source` | 站点 | 启用 | 特殊行为 |
+| --- | --- | --- | --- | --- |
+| `VolleyballChinaSpider` | `volleyballchina` | 中国排球协会 | 是 | 使用 Selenium 无头 Chrome 获取动态详情页。 |
+| `SportsVSpider` | `sportsv` | SportsV | 是 | 最多抓取前 2 页，每条新闻单独提交。 |
+| `VolSportsSpider` | `volsports` | Vol Sports | 是 | 最多抓取前 2 页。 |
+| `FIVBSpider` | `fivb` | 国际排联 | 是 | 将英文日期规范化为 `YYYY-MM-DD`。 |
+| `SportsSinaSpider` | `sports.sina` | 新浪体育 | 是 | 清理声明和广告区域。 |
+| `VolleyChinaSpider` | `volleychina` | VolleyChina | 否 | 抓取列表和正文。 |
 
 `VolleyballChinaSpider` 顺序抓取两个硬编码分类列表；`FIVBSpider` 与 `SportsSinaSpider` 当前只抓取入口列表页，没有翻页逻辑。
 
 ## 类定义
 
-| 类 | 主要职责 | 当前是否由入口启动 |
-| --- | --- | --- |
-| `VolleyballSpider` | 抽象基类，提供随机请求头、HTTP 请求、协议相对或根相对链接转换和新闻提交。 | 否 |
-| `VolleyballChinaSpider` | 通过 Selenium 获取中国排球协会动态详情页。 | 是 |
-| `SportsVSpider` | 抓取 SportsV 前 2 页新闻。 | 是 |
-| `VolSportsSpider` | 抓取 Vol Sports 前 2 页新闻。 | 是 |
-| `FIVBSpider` | 抓取国际排联新闻并转换英文日期。 | 是 |
-| `SportsSinaSpider` | 抓取新浪体育排球新闻并移除声明、广告区域。 | 是 |
-| `VolleyChinaSpider` | 抓取 VolleyChina 列表和正文。 | 否 |
-
 `VolleyballSpider.request()` 未设置显式超时，仅对超时和连接错误递归重试。初始计数为 `1`，计数达到 `5` 时停止，因此最多发出 4 次请求；`4xx/5xx` 响应和其他请求异常直接返回失败值。`parse_href()` 只补全以 `//` 或 `/` 开头的链接，不处理普通相对路径。每个来源的 `start()`、`parse_list()` 和 `parse_item()` 负责适配本来源的列表、详情及正文清理规则。
 
 ### 中国排球协会 WebDriver
 
-`VolleyballChinaSpider.get_driver()` 创建并托管 Chrome WebDriver，退出上下文时会关闭浏览器。容器环境下通过环境变量显式指定 Chromium 与 ChromeDriver；其他环境未设置变量时，保留 Selenium 的默认驱动发现行为，因此 Windows 本地运行不依赖容器路径。
+`VolleyballChinaSpider.get_driver()` 创建并托管 Chrome WebDriver，退出上下文时会关闭浏览器。Linux ARM64 不受 Selenium Manager 支持，因此容器通过环境变量显式指定 Chromium 与 ChromeDriver；其他环境未设置变量时保留默认驱动发现行为。
 
 WebDriver 使用无头模式，并关闭 GPU、Chrome 沙盒及 `/dev/shm` 依赖。详情页请求使用普通 Windows Chrome User-Agent，避免站点将 Linux 无头 Chromium 识别为受限客户端并返回 `429 Too Many Requests`。
 
@@ -116,11 +104,8 @@ WebDriver 使用无头模式，并关闭 GPU、Chrome 沙盒及 `/dev/shm` 依�
 | `CHROME_BIN` | `/usr/bin/chromium` | Chromium 可执行文件路径；未设置时由 Selenium 按默认规则查找浏览器。 |
 | `CHROMEDRIVER_BIN` | `/usr/bin/chromedriver` | ChromeDriver 可执行文件路径；未设置时由 Selenium Manager 自动查找或下载驱动。 |
 
-容器基础镜像为 `docker.1ms.run/python:3.13-slim`。构建阶段将 Debian APT 地址替换为清华镜像源，并安装 `chromium` 与版本匹配的 `chromium-driver`，供 Selenium 无头浏览器使用；安装后会清理 APT 索引。镜像和 Compose 通过 `CHROME_BIN` 与 `CHROMEDRIVER_BIN` 环境变量显式指定两个可执行文件，避免 Selenium Manager 在 Linux ARM64 环境中因架构不受支持而无法发现驱动。随后构建过程只复制 `requirements.txt`，通过清华镜像以 `--no-cache-dir` 安装 Python 依赖；当前 Dockerfile 不会升级 `pip` 或设置 `pip` 默认索引。`compose.yaml` 会将当前目录挂载到容器 `/app`，入口命令为 `python main.py`。
+容器基于 `docker.1ms.run/python:3.13-slim`，通过清华镜像安装 Chromium、ChromeDriver 和 Python 依赖。`compose.yaml` 将当前目录挂载到 `/app`，并以 `python main.py` 启动。
 
 ## 常见问题
 
 - 中国排球协会来源依赖 Chrome WebDriver；容器镜像已安装 Chromium 和对应驱动。修改 Dockerfile 后需要重新构建镜像，旧镜像不会自动获得浏览器环境。
-- 中国排球协会详情页会拒绝 Chromium 默认的无头浏览器 User-Agent，并返回 `429 Too Many Requests`。WebDriver 使用普通 Chrome User-Agent 访问详情页；该响应表示站点识别限制，不是驱动启动失败。
-- 某个站点请求超时或连接失败时，基础请求逻辑最多发出 4 次请求后跳过该请求；其他站点仍会继续执行。
-- 页面结构变化会导致选择器无法命中。调整选择器前，应同步检查本文件中的字段和正文清理规则是否仍准确。
