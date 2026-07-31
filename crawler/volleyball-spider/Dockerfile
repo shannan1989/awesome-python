@@ -9,6 +9,18 @@ ENV PYTHONUNBUFFERED=1
 # 设置工作目录
 WORKDIR /app
 
+# 使用清华 Debian 镜像源安装 Chromium 和对应驱动
+RUN sed -i \
+        's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' \
+        /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends chromium chromium-driver \
+    && rm -rf /var/lib/apt/lists/*
+
+# 显式指定浏览器和驱动，避免 Selenium Manager 不支持 Linux ARM64
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMEDRIVER_BIN=/usr/bin/chromedriver
+
 # 复制依赖清单
 COPY requirements.txt .
 

@@ -9,4 +9,6 @@ services:
     environment:
       - LANG=C.UTF-8  # 解决中文乱码问题
       - TZ=Asia/Shanghai
+      - CHROME_BIN=/usr/bin/chromium
+      - CHROMEDRIVER_BIN=/usr/bin/chromedriver
     command: python main.py
