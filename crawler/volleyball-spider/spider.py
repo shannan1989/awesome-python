@@ -97,14 +97,14 @@ class VolleyballSpider(metaclass=abc.ABCMeta):
 
             return r
         except (Timeout, ConnectionError) as e:
-            logging.warning(f"请求超时/连接错误 {url}: {e}")
+            logging.warning(f"请求超时/连接错误 {url} {e}")
             time.sleep(5)
             return self.request(url, tries + 1, max_retries)
         except RequestException as e:
-            logging.error(f"请求错误 {url}: {e}")
+            logging.error(f"请求错误 {url} {e}")
             return False
         except Exception as e:
-            logging.error(f"未知错误 {url}: {e}")
+            logging.error(f"未知错误 {url} {e}")
             return False
 
 

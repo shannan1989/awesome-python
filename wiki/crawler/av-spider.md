@@ -67,7 +67,7 @@ JavBus 会为 `www.javbus.com` 设置 `existmag=all` Cookie。日期过滤仅作
 | `JavBusSpider` | `javbus` | 读取同步数据后，抓取起始列表、已订阅演员及已启用系列；详情由单个、最多 2 个工作线程的执行器处理。 |
 | `AvmooSpider` | `avmoo` | 提供起始列表和演员列表抓取能力；默认入口未启用。 |
 
-所有来源都会跳过同步数据中的已采集影片 ID。列表页和详情页请求失败时，解析方法会返回；但来源启动时对 `base_url` 的返回值不做失败判断，无法取得同步数据时可能在 JSON 解析阶段异常退出。
+所有来源都会跳过同步数据中的已采集影片 ID。列表页、详情页请求失败时，解析方法会提前返回；来源启动时也会判断 `base_url` 的返回值，当 `request` 重试 10 次后返回 `False` 时，`start` 会打印提示并跳过本轮抓取，等待 `crawl_interval` 后由 `runtime.restart` 触发下一轮重试，避免在 JSON 解析阶段抛出 `AttributeError` 导致整体崩溃。
 
 ### 影片对象
 
