@@ -20,6 +20,10 @@ class JavBusSpider(BaseSpider):
 
     def start(self):
         r = self.request(self.baseUrl)
+        if r is False:
+            print('baseUrl暂不可用，跳过爬取' + self.source)
+            return
+
         data = json.loads(r.text)
         self.ids = data.get('ids')
         self.stars = data.get('stars')
