@@ -136,7 +136,13 @@ class AirAvSpider(BaseSpider):
             if len(nodes) < 2:
                 continue
             if type(nodes[0]) == etree._ElementUnicodeResult and str(nodes[0]) == '番号：':
-                movie['serial_number'] = nodes[1].text
+                # nodes 是混合节点列表：文本节点直接 str()；元素节点若直接子标签嵌套，.text 会返回 None，必须用 xpath string() 拼接所有后代文本
+                node = nodes[1]
+                movie['serial_number'] = (
+                    node.xpath('string()').strip()
+                    if isinstance(node, etree._Element)
+                    else str(node).strip()
+                )
             # TODO
 
         video_info = html.xpath("//div[@class='video-item']/div[@class='me-4']/text()")
