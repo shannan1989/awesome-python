@@ -174,10 +174,19 @@ class AirAvSpider(BaseSpider):
                 continue
             print(info_id, info_name, href)
 
-        if movie['serial_number']:
-            movie['title'] = movie['title'].replace(movie['serial_number'] + ' ' + movie['serial_number'], movie['serial_number']).strip()
-        # 4. 移除番号末尾的 -LTX 后缀并提交影片数据
-        movie['serial_number'] = movie['serial_number'].removesuffix('-LTX')
+        # 4. 先去除标题中的重复番号，再同步标题开头的番号
+        original_serial_number = movie['serial_number']
+        serial_number = re.sub(r'(?:-LTX|-V|[Vv])\Z', '', original_serial_number)
+        if original_serial_number:
+            title = movie['title'].replace(
+                f'{original_serial_number} {original_serial_number}', original_serial_number
+            ).strip()
+            if serial_number != original_serial_number and title.startswith(original_serial_number):
+                title = serial_number + title.removeprefix(original_serial_number)
+            movie['title'] = title
+        movie['serial_number'] = serial_number
+
+        # 5. 提交单条影片数据
         self.sendMovieData(movie)
         time.sleep(1)
 
