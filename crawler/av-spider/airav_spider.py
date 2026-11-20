@@ -176,7 +176,8 @@ class AirAvSpider(BaseSpider):
 
         if movie['serial_number']:
             movie['title'] = movie['title'].replace(movie['serial_number'] + ' ' + movie['serial_number'], movie['serial_number']).strip()
-        # 4. 提交单条影片数据
+        # 4. 移除番号末尾的 -LTX 后缀并提交影片数据
+        movie['serial_number'] = movie['serial_number'].removesuffix('-LTX')
         self.sendMovieData(movie)
         time.sleep(1)
 
