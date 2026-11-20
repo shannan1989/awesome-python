@@ -4,7 +4,7 @@ import json
 import random
 import requests
 import time
-from urllib.parse import urlparse, urljoin
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlsplit
 
 
 class BaseSpider(object):
@@ -18,6 +18,13 @@ class BaseSpider(object):
         pr = urlparse(self.startUrl)
         self.host = pr.scheme + '://' + pr.netloc
         self.source = '' # 子类必须设置
+
+    def getBaseUrl(self) -> str:
+        """返回带有当前爬虫来源的同步数据地址，保留其他查询参数。"""
+        url = urlsplit(self.baseUrl)
+        query = [(key, value) for key, value in parse_qsl(url.query, keep_blank_values=True) if key != 'source']
+        query.append(('source', self.source))
+        return url._replace(query=urlencode(query)).geturl()
 
     def getHeaders(self):
         userAgents = [
@@ -57,8 +64,8 @@ class BaseSpider(object):
         return urljoin(base_url, href)
 
     def request(self, url, tries=1):
-        if tries >= 10:
-            print(url, 'tries>=10')
+        if tries > 10:
+            print(url, 'tries=10')
             return False
         try:
             r = self.session.get(url, headers=self.getHeaders(), timeout=30)

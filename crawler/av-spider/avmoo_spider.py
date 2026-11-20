@@ -20,7 +20,7 @@ class AvmooSpider(BaseSpider):
         ]
 
     def start(self):
-        r = self.request(self.baseUrl)
+        r = self.request(self.getBaseUrl())
         if r is False:
             print('baseUrl暂不可用，跳过爬取' + self.source)
             return

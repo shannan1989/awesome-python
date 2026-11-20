@@ -23,7 +23,7 @@ AV 爬虫从多个影片站点采集影片详情、演员和分类关联数据�
 ```mermaid
 flowchart TD
     A[读取 config.ini] --> B[顺序启动 AirAv 与 JavBus]
-    B --> C[各来源请求 base_url 同步数据]
+    B --> C[各来源携带 source 请求 base_url 同步数据]
     C --> D[抓取列表页，过滤已采集影片]
     D --> E[并发抓取影片详情]
     E --> F[以 movie 类型 POST 到 hound_url]
@@ -54,6 +54,7 @@ JavBus 会为 `www.javbus.com` 设置 `existmag=all` Cookie。日期过滤仅作
 | `houndUrl` | 接收影片及演员扩展数据的服务地址。 |
 | `startUrl` | 当前来源的起始列表地址。 |
 | `host` | 从起始地址解析出的协议和域名，用于拼接来源内链接。 |
+| `getBaseUrl()` | 返回带有当前爬虫 `source` 的同步数据地址，保留其他查询参数，不修改 `baseUrl`。 |
 | `request(url)` | 以随机浏览器请求头、30 秒超时请求页面；失败后每隔 5 秒重试，初始尝试计数为 `1`，在计数达到 `10` 前最多发出 9 次请求。 |
 | `parseHref(href, base_url)` | 使用当前页面地址将相对链接转为绝对 URL。 |
 | `sendMovieData(movie)` | 将一条影片封装为 `movie` 类型表单请求并提交。 |
@@ -99,7 +100,13 @@ AirAv 只提交播放地址，不下载或验证视频内容；其他来源当�
 | 请求方法 | `GET` |
 | 关键响应字段 | `ids`、`stars`、`studios`、`series`、`genres` |
 
-其中 `ids` 用于三个来源的影片去重。JavBus 会读取全部扩展数据，但当前只有 `stars` 和 `series` 会进入列表抓取，`studios` 与 `genres` 只输出启用项日志；AirAv 当前只按起始列表抓取，Avmoo 使用 `stars` 抓取演员列表。
+| 查询参数 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `source` | string | 是 | 当前爬虫的来源标识，例如 `airav`、`javbus`、`avmoo` |
+
+`base_url` 已有的其他查询参数会保留；已有的 `source` 由当前爬虫的来源标识替换。
+
+响应中的 `ids` 用于影片去重。JavBus 会读取全部扩展数据，但当前只有 `stars` 和 `series` 会进入列表抓取，`studios` 与 `genres` 只输出启用项日志；AirAv 当前只按起始列表抓取，Avmoo 使用 `stars` 抓取演员列表。
 
 ### 采集结果接口
 
