@@ -8,8 +8,16 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlsplit
 
 
 class BaseSpider(object):
+    # 重试无法恢复的 4xx 状态码，收到后直接放弃本次请求
+    _NO_RETRY_STATUS = (400, 401, 403, 404, 410, 451)
+    # Cloudflare 边缘拦截状态码：403 为人机校验，451 为地区/法务限制
+    _BLOCKED_STATUS = (403, 451)
+
     def __init__(self, baseUrl, houndUrl, startUrl):
         self.session = requests.session()
+
+        # 站点是否已被判定为 Cloudflare 拦截，用于熔断本轮剩余请求
+        self.blocked = False
 
         self.baseUrl = baseUrl
         self.houndUrl = houndUrl
@@ -64,12 +72,28 @@ class BaseSpider(object):
         return urljoin(base_url, href)
 
     def request(self, url, tries=1):
+        # 1. 站点已确认被拦截时直接放弃，避免对后续每个列表页、详情页重复空转
+        if self.blocked:
+            return False
         if tries > 10:
             print(url, 'tries=10')
             return False
         try:
             r = self.session.get(url, headers=self.getHeaders(), timeout=30)
             print('%s %s' % (r.status_code, url))
+
+            # 2. Cloudflare 的 403/451 由边缘按 IP、地区或法务策略直接拦截，改请求头、重试均无效
+            if r.status_code in self._BLOCKED_STATUS:
+                self.blocked = True
+                print('%s 返回 %s（Cloudflare 拦截：人机校验或地区/法务限制），本轮跳过 %s' % (url, r.status_code, self.source))
+                return False
+
+            # 3. 其余 4xx（超时、限流除外）重试也无法恢复，直接放弃
+            if r.status_code in self._NO_RETRY_STATUS:
+                print('%s 返回 %s，不再重试' % (url, r.status_code))
+                return False
+
+            # 4. 5xx、429 等临时性错误仍按间隔重试
             if r.status_code != 200:
                 time.sleep(5)
                 return self.request(url, tries + 1)
