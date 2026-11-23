@@ -567,6 +567,7 @@ class FIVBSpider(VolleyballSpider):
         self.parse_list(self.url)
 
     def parse_list(self, url):
+        """抓取国际排联新闻列表，分批提交成功解析的新闻。"""
         r = self.request(url)
         if r == False :
             return
@@ -590,6 +591,9 @@ class FIVBSpider(VolleyballSpider):
             article['url'] = item.select_one('a').get('href')
 
             info = self.parse_item(article['url'])
+            if info is None:
+                logging.warning("国际排联新闻详情获取失败，跳过 %s", article['url'])
+                continue
 
             article['title'] = info['title']
             article['desc'] = info['desc']
